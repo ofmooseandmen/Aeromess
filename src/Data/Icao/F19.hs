@@ -1,7 +1,6 @@
 -- |
--- Provides data types and functions pertaining to the supplementary information
--- (Field Type 19) as defined in the ICAO 4444 edition 2016 standard.
-module Data.Icao.SupplementaryInformation
+-- ICAO Field Type 19 - Supplementary information.
+module Data.Icao.F19
     ( Transmitter(..)
     , SurvivalEquipment(..)
     , LifeJacket(..)

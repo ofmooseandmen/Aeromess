@@ -1,11 +1,10 @@
 -- |
--- ICAO Field Type 7
+-- ICAO Field Type 7 - Aircraft identification and SSR mode and code.
 module Data.Icao.F7
     ( SsrMode (..)
     , Data (..)
     , parser
     )
-
 where
 
 import           Data.Maybe

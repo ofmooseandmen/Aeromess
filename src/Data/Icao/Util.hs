@@ -5,7 +5,6 @@ module Data.Icao.Util
     ( betterSwitches
     , aerodromeParser
     )
-
 where
 
 import           Data.List

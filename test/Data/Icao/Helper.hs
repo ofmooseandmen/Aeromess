@@ -2,7 +2,6 @@ module Data.Icao.Helper
      ( parseExpectingSuccess
      , parseExpectingError
      )
-
 where
 
 import           Text.ParserCombinators.Parsec

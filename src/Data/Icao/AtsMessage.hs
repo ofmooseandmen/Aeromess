@@ -2,7 +2,7 @@
 -- Operations on Air Traffic Service (ATS) messages as defined in
 -- the ICAO 4444 edition 2016 standard.
 --
--- TODO: better documentation...
+-- TODO: better documentation here and also in each FXX indicate if it can be a terminal field
 module Data.Icao.AtsMessage
     ( AtsMessage(..)
     , parser
@@ -10,8 +10,12 @@ module Data.Icao.AtsMessage
 where
 
 import qualified Data.Icao.Time as T
+import qualified Data.Icao.F3   as F3
 import qualified Data.Icao.F7   as F7
 import qualified Data.Icao.F13  as F13
+import qualified Data.Icao.F16  as F16
+import qualified Data.Icao.F17  as F17
+import qualified Data.Icao.F18  as F18
 import           Text.ParserCombinators.Parsec
 
 -- | An ICAO 4444 ATS message.
@@ -57,41 +61,47 @@ data AtsMessage =
           -- | aerodrome of arrival,
         , ades                    :: String
           -- | other information; TODO: data type instead of string
-        ,  otherInformation       :: String
+        , otherInformation       :: Maybe String
         }
     deriving (Show, Eq)
 
--- | Field Type 3 parser
--- TODO: support for message number and reference data
-msgType :: Parser String
-msgType = do
-    t <- count 3 upper
-    satisfy (== '-')
-    return t
-
 -- | 'ArrivalMessage' parser
 arrival :: Parser AtsMessage
-arrival = undefined
+arrival = do
+    f7          <- F7.parser
+    f13         <- F13.parser
+    orginalAdes <- F16.maybeAdesParser
+    f17         <- F17.parser
+    return (ArrivalMessage (F7.aircraftIdentification f7)
+                           (F7.ssrMode f7)
+                           (F7.ssrCode f7)
+                           (F13.adep f13)
+                           (F13.time f13)
+                           orginalAdes
+                           (F17.adar f17)
+                           (F17.ata f17)
+                           (F17.adarName f17))
 
 -- | 'DepartureMessage' parser
 departure :: Parser AtsMessage
 departure = do
-    f7  <- F7.parser
-    f13 <- F13.parser
-    many anyChar
+    f7   <- F7.parser
+    f13  <- F13.parser
+    ades <- F16.adesParser
+    f18  <- F18.parser
     return (DepartureMessage (F7.aircraftIdentification f7)
                              (F7.ssrMode f7)
                              (F7.ssrCode f7)
                              (F13.adep f13)
                              (F13.time f13)
-                             ""
-                             "")
+                             ades
+                             f18)
 
 -- | 'AtsMessage' parser
 parser :: Parser AtsMessage
 parser = do
     satisfy (== '(')
-    mt <- msgType
-    case mt of
+    f3 <- F3.parser
+    case f3 of
         "ARR" -> arrival
         "DEP" -> departure

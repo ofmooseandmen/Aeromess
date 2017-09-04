@@ -1,10 +1,10 @@
 -- |
--- ICAO Field Type 13
+-- ICAO Field Type 13 - Departure aerodrome and time.
 module Data.Icao.F13
     ( Data(..)
+    , adepParser
     , parser
     )
-
 where
 
 import qualified Data.Icao.Time as T

@@ -18,8 +18,12 @@ cabal-version:       >=1.10
 library
   hs-source-dirs:      src
   exposed-modules:     Data.Icao.AtsMessage
+                     , Data.Icao.F3
                      , Data.Icao.F7
                      , Data.Icao.F13
+                     , Data.Icao.F16
+                     , Data.Icao.F17
+                     , Data.Icao.F18
                      , Data.Icao.Time
                      , Data.Icao.Util
   build-depends:       base >= 4.7 && < 5

@@ -11,5 +11,5 @@ import           Text.ParserCombinators.Parsec
 parser :: Parser String
 parser = do
     t <- count 3 upper
-    satisfy (== '-')
+    char '-'
     return t

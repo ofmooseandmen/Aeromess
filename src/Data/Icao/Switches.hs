@@ -1,74 +1,66 @@
 -- |
 -- Functions pertaining to ICAO fields defined as a sequence of switches (i.e. F18, F19 and F22)
 module Data.Icao.Switches
-    ( sanitize
+    ( sanitise
     )
 where
 
 import           Data.List
 import           Data.Maybe
 
-safeLast :: [a] -> Maybe a
-safeLast [] = Nothing
-safeLast xs = Just (last xs)
+subList' :: Eq a => [a] -> [a] -> Int
+subList' _ [] = -1
+subList' as xxs@(x:xs)
+  | all (uncurry (==)) $ zip as xxs = 0
+  | otherwise                       = 1 + subList' as xs
 
-spaceBefore :: String -> Int -> Maybe Int
-spaceBefore s i =
-    let
-        sub = take (i - 1) s
-    in if null sub then
-        Nothing
-    else
-       safeLast (elemIndices ' ' sub)
+subList :: Eq a => [[a]] -> [a] -> [Int]
+subList needles haystack =
+    map (`subList'` haystack) needles
 
-replaceSpaceByDash :: String -> Int -> String
-replaceSpaceByDash s i =
+indices :: Eq a => [[a]] -> [a] -> [Int]
+indices needles haystack =
+    filter (> 0) (map (\i -> i - 1) (sort (subList needles haystack)))
+
+replaceBy :: Eq a => a -> [a] -> Int -> [a]
+replaceBy r h i =
     let
-      (x,_:ys) = splitAt i s
+      (x,_:ys) = splitAt i h
     in
-      x ++ '-' : ys
+      x ++ r : ys
 
-replaceSpaceBeforeByDash :: String -> Int -> String
-replaceSpaceBeforeByDash s i =
-    maybe s (replaceSpaceByDash s) (spaceBefore s i)
+sanitise''' :: Eq a => [Int] -> [a] -> a -> [a]
+sanitise''' is haystack replacement =
+  foldl (replaceBy replacement) haystack is
 
-setDashes' :: [Int] -> String -> String
-setDashes' is s =
-    foldl replaceSpaceBeforeByDash s is
+sanitise' :: Eq a => [[a]] -> [a] -> a -> [a]
+sanitise' needles haystack =
+  sanitise''' (indices needles haystack) haystack
 
-setDashes :: String -> String
-setDashes s =
-    setDashes' (elemIndices '/' s) s
+switchEnd :: Char
+switchEnd = '#'
 
-splitByDash :: String -> [String]
-splitByDash s =
-    case dropWhile (== '-') s of
+splitByEnd :: String -> [String]
+splitByEnd s =
+    case dropWhile (== switchEnd) s of
         "" -> []
-        s' -> w : splitByDash s''
-            where (w, s'') = break (== '-') s'
+        s' -> w : splitByEnd s''
+            where (w, s'') = break (== switchEnd) s'
 
 sortByKey :: String -> String
 sortByKey s =
-    intercalate "-" (sort (splitByDash s))
+    intercalate [switchEnd] (sort (splitByEnd s))
 
--- | 'sanitize' replaces the whitespace character before each '/' by a '-'
--- and sorts the string by switch key. Returns 'Nothing' if the given string
--- contains a '-' character or no '/' character.
--- 'sanitize' facilitates the subsequent parsing of an ICAO field
+-- | 'sanitise' replaces the whitespace character before each '/' by a '#'
+-- and sorts the string by switch key.
+-- 'sanitise' facilitates the subsequent parsing of an ICAO field
 -- composed of switches.
 --
--- ==== __Examples___
+-- ==== __Example___
 --
--- >>> sanitize "FOO/BAR BAR BAR/HELLO ARG/WORLD"
--- Just "ARG/WORLD-BAR/HELLO-FOO/BAR BAR"
+-- >>> sanitise ["FOO", "ARG", "BAR"] "FOO/BAR BAR BAR/HELLO ARG/HELLO-MESS/WORLD"
+-- "ARG/HELLO-MESS/WORLD#BAR/HELLO#FOO/BAR BAR"
 --
--- >>> sanitize "FOO/BAR-BAR"
--- Nothing
---
--- TODO: given the context in which this method will be called, '-' and '/' are to be expected: F18-F19-...
---
-sanitize :: String -> Maybe String
-sanitize s
-    | '-' `elem` s    = Nothing
-    | '/' `notElem` s = Nothing
-    | otherwise       = Just (sortByKey (setDashes s))
+sanitise :: [String] -> String -> String
+sanitise keys switches =
+  sortByKey (sanitise' (map (++ "/") keys) switches switchEnd)

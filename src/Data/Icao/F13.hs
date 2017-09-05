@@ -22,12 +22,12 @@ parser :: Parser Data
 parser = do
     adep <- aerodromeParser
     time <- hhmmParser
-    satisfy (== '-')
+    char '-'
     return (Data adep time)
 
 -- | ADEP parser.
 adepParser :: Parser AerodromeName
 adepParser = do
     adep <- aerodromeParser
-    satisfy (== '-')
+    char '-'
     return adep

@@ -23,13 +23,13 @@ data Data = Data
 
 altn :: Parser (Maybe AerodromeName)
 altn =
-    optionMaybe (char ' ' >> aerodromeParser)
+    optionMaybe (space >> aerodromeParser)
 
 -- | ADES parser.
 adesParser :: Parser AerodromeName
 adesParser = do
     ades <- aerodromeParser
-    satisfy (== '-')
+    char '-'
     return ades
 
 -- | maybe ADES parser.
@@ -44,5 +44,5 @@ parser = do
     tett  <- hhmmParser
     altn1 <- altn
     altn2 <- altn
-    satisfy (== '-')
+    char '-'
     return (Data ades tett altn1 altn2)

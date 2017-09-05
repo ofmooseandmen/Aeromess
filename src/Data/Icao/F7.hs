@@ -43,13 +43,9 @@ modeParser = do
         'C' -> C
         'S' -> S
 
-octal :: Parser Char
-octal =
-    satisfy isOctDigit
-
 codeParser :: Parser SsrCode
 codeParser =
-    fmap SsrCode (count 4 octal)
+    fmap SsrCode (count 4 octDigit)
 
 smcParser' :: Parser (SsrMode, SsrCode)
 smcParser' = do
@@ -74,7 +70,7 @@ parser :: Parser Data
 parser = do
     acId <- acIdParser
     smc <- smcParser
-    satisfy (== '-')
+    char '-'
     return (Data acId (fmap fst smc) (fmap snd smc))
 
 mkAircraftIdentification :: (Monad m) => String -> m AircraftIdentification

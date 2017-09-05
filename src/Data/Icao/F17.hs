@@ -23,5 +23,5 @@ parser :: Parser Data
 parser = do
     adar <- aerodromeParser
     ata  <- hhmmParser
-    adarName <- optionMaybe (char ' ' >> many1 (choice [alphaNum, char ' ']))
+    adarName <- optionMaybe (space >> many1 (choice [alphaNum, space]))
     return (Data adar ata adarName)

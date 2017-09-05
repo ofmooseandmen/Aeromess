@@ -1,20 +1,21 @@
 module Data.Icao.Helper
-     ( parseExpectingSuccess
-     , parseExpectingError
+     ( pSuccess
+     , pErr
      )
 where
 
+import           Data.Icao.AtsMessage
 import           Text.ParserCombinators.Parsec
 import           Text.Parsec.Error
 
-parseExpectingSuccess :: String -> Parser a -> a
-parseExpectingSuccess text parser =
+pSuccess :: String -> AtsMessage
+pSuccess text =
     either undefined id (parse parser "" text)
 
-parseExpectingError :: String -> Parser a -> String
-parseExpectingError text parser =
-    either firstErrorMessage undefined (parse parser "" text)
+pErr :: String -> String
+pErr text =
+    either errMessage undefined (parse parser "" text)
 
-firstErrorMessage :: ParseError -> String
-firstErrorMessage err =
-    messageString (head (errorMessages err))
+errMessage :: ParseError -> String
+errMessage e =
+    "unexpected " ++ (messageString (head (errorMessages e))) ++ " at column " ++ (show (sourceColumn (errorPos e)))

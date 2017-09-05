@@ -2,25 +2,26 @@
 -- ICAO Field Type 17 -  Arrival aerodrome and time.
 -- Note: this is the terminal field of an ARR message
 module Data.Icao.F17
-    ( Data (..)
+    ( Data (adar, ata, adarName)
     , parser
     )
 where
 
-import qualified Data.Icao.Time as T
-import           Data.Icao.Util
+import           Data.Icao.Location
+import           Data.Icao.Time
 import           Text.ParserCombinators.Parsec
 
+-- | Field Type 17 data.
 data Data = Data
-    { adar     :: String
-    , ata      :: T.Hhmm
+    { adar     :: AerodromeName
+    , ata      :: Hhmm
     , adarName :: Maybe String
     }
 
+-- | Field Type 17 'Data' parser.
 parser :: Parser Data
 parser = do
     adar <- aerodromeParser
-    ata  <- T.hhmmParser
-    adarName <- optionMaybe aerodromeParser
-    satisfy (== ')')
+    ata  <- hhmmParser
+    adarName <- optionMaybe (char ' ' >> many1 upper)
     return (Data adar ata adarName)

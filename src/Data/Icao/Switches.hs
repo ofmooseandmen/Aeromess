@@ -1,15 +1,12 @@
 -- |
--- Utility module
--- TODO: consider breaking down
-module Data.Icao.Util
-    ( betterSwitches
-    , aerodromeParser
+-- Functions pertaining to ICAO fields defined as a sequence of switches (i.e. F18, F19 and F22)
+module Data.Icao.Switches
+    ( sanitize
     )
 where
 
 import           Data.List
 import           Data.Maybe
-import           Text.ParserCombinators.Parsec
 
 safeLast :: [a] -> Maybe a
 safeLast [] = Nothing
@@ -54,27 +51,24 @@ sortByKey :: String -> String
 sortByKey s =
     intercalate "-" (sort (splitByDash s))
 
--- | 'betterSwitches' replaces the whitespace character before each '/' by a '-'
+-- | 'sanitize' replaces the whitespace character before each '/' by a '-'
 -- and sorts the string by switch key. Returns 'Nothing' if the given string
 -- contains a '-' character or no '/' character.
--- 'betterSwitches' is facilitates the subsequent parsing of an ICAO field
+-- 'sanitize' facilitates the subsequent parsing of an ICAO field
 -- composed of switches.
 --
 -- ==== __Examples___
 --
--- >>> preProcess "FOO/BAR BAR BAR/HELLO ARG/WORLD"
+-- >>> sanitize "FOO/BAR BAR BAR/HELLO ARG/WORLD"
 -- Just "ARG/WORLD-BAR/HELLO-FOO/BAR BAR"
 --
--- >>> preProcess "FOO/BAR-BAR"
+-- >>> sanitize "FOO/BAR-BAR"
 -- Nothing
 --
-betterSwitches :: String -> Maybe String
-betterSwitches s
+-- TODO: given the context in which this method will be called, '-' and '/' are to be expected: F18-F19-...
+--
+sanitize :: String -> Maybe String
+sanitize s
     | '-' `elem` s    = Nothing
     | '/' `notElem` s = Nothing
     | otherwise       = Just (sortByKey (setDashes s))
-
--- | Parser for ICAO compliant aerordome names (4 uppecrase characters)
-aerodromeParser :: Parser String
-aerodromeParser =
-    count 4 upper

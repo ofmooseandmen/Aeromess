@@ -1,9 +1,9 @@
 -- |
 -- ICAO Field Type 19 - Supplementary information.
 module Data.Icao.F19
-    ( Transmitter(..)
-    , SurvivalEquipment(..)
-    , LifeJacket(..)
+    ( Transmitter (..)
+    , SurvivalEquipment (..)
+    , LifeJacket (..)
     , SupplementaryInformation(..)
     )
 where

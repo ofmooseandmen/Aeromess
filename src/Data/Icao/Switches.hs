@@ -8,6 +8,8 @@ where
 import           Data.List
 import           Data.Maybe
 
+-- | Index of given first list in second list or -1.
+-- Thanks to <https://stackoverflow.com/a/29516781>
 subList' :: Eq a => [a] -> [a] -> Int
 subList' _ [] = -1
 subList' as xxs@(x:xs)

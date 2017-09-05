@@ -7,14 +7,16 @@ module Data.Icao.AtsMessage
     ( AtsMessage (..)
 
     -- re-exported data types
-    , AerodromeName ()
-    , Hhmm ()
-    , F7.AircraftIdentification ()
+    , AerodromeName
+    , Hhmm (hour, minute)
+    , F7.AircraftIdentification
+    , F7.SsrCode
     , F7.SsrMode (..)
 
     -- re-exported smart constructor
     , mkAerodromeName
     , F7.mkAircraftIdentification
+    , F7.mkSsrCode
     , mkHhmm
 
     , parser
@@ -44,7 +46,7 @@ data AtsMessage =
           -- | SSR mode.
         , ssrMode                 :: Maybe F7.SsrMode
           -- | SSR code.
-        , ssrCode                 :: Maybe Int
+        , ssrCode                 :: Maybe F7.SsrCode
           -- | aerodrome of departure.
         , adep                    :: AerodromeName
           -- | estimated off-block time.
@@ -66,7 +68,7 @@ data AtsMessage =
           -- | SSR mode
         , ssrMode                 :: Maybe F7.SsrMode
           -- | SSR code
-        , ssrCode                 :: Maybe Int
+        , ssrCode                 :: Maybe F7.SsrCode
           -- | aerodrome of departure.
         , adep                    :: AerodromeName
           -- | actual time of departure.

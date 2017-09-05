@@ -2,7 +2,7 @@
 -- Provides data types and functions pertaining to locations
 -- in accordance with the ICAO 4444 edition 2016 standard.
 module Data.Icao.Location
-    ( AerodromeName ()
+    ( AerodromeName
     , aerodromeParser
     , mkAerodromeName
     )
@@ -11,7 +11,7 @@ where
 import           Text.ParserCombinators.Parsec
 
 -- the name of an aerodrome, 4 uppercase characters.
-data AerodromeName = AerodromeName String deriving (Show, Eq)
+newtype AerodromeName = AerodromeName String deriving (Show, Eq)
 
 -- | 'Aerodrome' Parser.
 aerodromeParser :: Parser AerodromeName

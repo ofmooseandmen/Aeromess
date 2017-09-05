@@ -1,32 +1,38 @@
 -- |
 -- ICAO Field Type 7 - Aircraft identification and SSR mode and code.
 module Data.Icao.F7
-    ( AircraftIdentification ()
+    ( AircraftIdentification
+    , SsrCode
     , SsrMode (..)
     , Data (aircraftIdentification, ssrMode, ssrCode)
     , mkAircraftIdentification
+    , mkSsrCode
     , parser
     )
 where
 
+import           Data.Char
 import           Data.Maybe
 import           Text.ParserCombinators.Parsec
 
 -- | Aircraft identification, a.k.a. call-sign, maximum of 7 uppercase characters.
-data AircraftIdentification = AircraftIdentification String deriving (Show, Eq)
+newtype AircraftIdentification = AircraftIdentification String deriving (Show, Eq)
 
--- | Secondary Surveillance Radar Mode.
+-- | Secondary Surveillance Radar mode.
 data SsrMode =
       A
     | C
     | S
     deriving (Show, Eq, Enum)
 
+-- | Secondary Surveillance Rada code, 4 octal digits.
+newtype SsrCode = SsrCode String deriving (Show, Eq)
+
 -- | Field Type 7 data.
 data Data = Data
     { aircraftIdentification :: AircraftIdentification
     , ssrMode                :: Maybe SsrMode
-    , ssrCode                :: Maybe Int
+    , ssrCode                :: Maybe SsrCode
     }
 
 modeParser :: Parser SsrMode
@@ -37,17 +43,21 @@ modeParser = do
         'C' -> C
         'S' -> S
 
-codeParser :: Parser Int
-codeParser =
-    fmap read (count 4 digit)
+octal :: Parser Char
+octal =
+    satisfy isOctDigit
 
-smcParser' :: Parser (SsrMode, Int)
+codeParser :: Parser SsrCode
+codeParser =
+    fmap SsrCode (count 4 octal)
+
+smcParser' :: Parser (SsrMode, SsrCode)
 smcParser' = do
     m <- modeParser
     c <- codeParser
     return (m, c)
 
-smcParser :: Parser (Maybe (SsrMode, Int))
+smcParser :: Parser (Maybe (SsrMode, SsrCode))
 smcParser =
     optionMaybe (char '/' >> smcParser')
 
@@ -72,3 +82,14 @@ mkAircraftIdentification n
     | length n <= 0 = fail "empty Aicraft identification"
     | length n > 7  = fail "max Aircraft identification length (7) exceed"
     | otherwise     = return (AircraftIdentification n)
+
+validCode :: String -> Bool
+validCode c
+    | length c /= 4    = False
+    | all isOctDigit c = True
+    | otherwise        = False
+
+mkSsrCode :: (Monad m) => String -> m SsrCode
+mkSsrCode c
+    | validCode c = return (SsrCode c)
+    | otherwise   = fail "SSR code must contain 4 octal digits"

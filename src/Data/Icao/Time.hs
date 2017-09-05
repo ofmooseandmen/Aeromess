@@ -32,14 +32,14 @@ hhmmParser = do
     hour <- numbers 2;
     minute <- numbers 2;
     if hour > 23 then
-        unexpected ("hour=" ++ (show hour))
+        unexpected ("hour=" ++ show hour)
     else if minute > 59 then
-        unexpected ("minute=" ++ (show minute))
+        unexpected ("minute=" ++ show minute)
     else
         return (Hhmm hour minute)
 
 mkHhmm :: (Monad m) => Int -> Int -> m Hhmm
 mkHhmm hh mm
-    | (hh < 0 || hh > 23) = fail "invalid hour"
-    | (mm < 0 || mm > 59) = fail "invalid minute"
-    | otherwise           = return (Hhmm hh mm)
+    | hh < 0 || hh > 23 = fail "invalid hour"
+    | mm < 0 || mm > 59 = fail "invalid minute"
+    | otherwise         = return (Hhmm hh mm)

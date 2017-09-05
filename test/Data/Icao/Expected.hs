@@ -2,25 +2,25 @@ module Data.Icao.Expected
      ( mkAerodromeName'
      , mkAircraftIdentification'
      , mkHhmm'
+     , mkSsrCode'
      )
 where
 
-import Data.Icao.AtsMessage
+import           Data.Icao.AtsMessage
+import           Data.Maybe
 
 mkAerodromeName' :: String -> AerodromeName
 mkAerodromeName' n =
-    case mkAerodromeName n of
-        Nothing -> error "invalid aerodrome name"
-        Just r  -> r
+    fromMaybe (error "invalid aerodrome name") (mkAerodromeName n)
 
 mkAircraftIdentification' :: String -> AircraftIdentification
 mkAircraftIdentification' n =
-    case mkAircraftIdentification n of
-        Nothing -> error "invalid aircraft identification"
-        Just r  -> r
+    fromMaybe (error "invalid aircraft identification") (mkAircraftIdentification n)
+
+mkSsrCode' :: String -> SsrCode
+mkSsrCode' c =
+    fromMaybe (error "invalid SSR code") (mkSsrCode c)
 
 mkHhmm' :: Int -> Int -> Hhmm
 mkHhmm' h m =
-    case mkHhmm h m of
-        Nothing -> error "invalid hour/minute"
-        Just r  -> r
+    fromMaybe (error "invalid hour/minute") (mkHhmm h m)

@@ -5,8 +5,8 @@ module Data.Icao.Helper
 where
 
 import           Data.Icao.AtsMessage
-import           Text.ParserCombinators.Parsec
 import           Text.Parsec.Error
+import           Text.ParserCombinators.Parsec
 
 pSuccess :: String -> AtsMessage
 pSuccess text =
@@ -18,4 +18,5 @@ pErr text =
 
 errMessage :: ParseError -> String
 errMessage e =
-    "unexpected " ++ (messageString (head (errorMessages e))) ++ " at column " ++ (show (sourceColumn (errorPos e)))
+    "unexpected " ++ messageString (head (errorMessages e))
+        ++ " at column " ++ show (sourceColumn (errorPos e))

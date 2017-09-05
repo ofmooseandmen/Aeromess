@@ -21,12 +21,12 @@ module Data.Icao.AtsMessage
     )
 where
 
-import qualified Data.Icao.F3  as F3
-import qualified Data.Icao.F7  as F7
-import qualified Data.Icao.F13 as F13
-import qualified Data.Icao.F16 as F16
-import qualified Data.Icao.F17 as F17
-import qualified Data.Icao.F18 as F18
+import qualified Data.Icao.F13                 as F13
+import qualified Data.Icao.F16                 as F16
+import qualified Data.Icao.F17                 as F17
+import qualified Data.Icao.F18                 as F18
+import qualified Data.Icao.F3                  as F3
+import qualified Data.Icao.F7                  as F7
 import           Data.Icao.Location
 import           Data.Icao.Time
 import           Text.ParserCombinators.Parsec
@@ -74,7 +74,7 @@ data AtsMessage =
           -- | aerodrome of arrival.
         , ades                    :: AerodromeName
           -- | other information. TODO: data type instead of string
-        , otherInformation       :: Maybe String
+        , otherInformation        :: Maybe String
         }
     deriving (Show, Eq)
 

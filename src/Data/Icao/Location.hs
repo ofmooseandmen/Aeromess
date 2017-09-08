@@ -5,21 +5,21 @@ module Data.Icao.Location
     ( AerodromeName
     , aerodromeParser
     , mkAerodromeName
-    )
-where
+    ) where
 
-import           Text.ParserCombinators.Parsec
+import Data.Aeromess.Parser
 
 -- the name of an aerodrome, 4 uppercase characters.
-newtype AerodromeName = AerodromeName String deriving (Show, Eq)
+newtype AerodromeName =
+    AerodromeName String
+    deriving (Eq, Show)
 
 -- | 'Aerodrome' Parser.
 aerodromeParser :: Parser AerodromeName
-aerodromeParser =
-    fmap AerodromeName (count 4 upper)
+aerodromeParser = fmap AerodromeName (upperWord 4)
 
 mkAerodromeName :: (Monad m) => String -> m AerodromeName
 mkAerodromeName n
     | length n <= 0 = fail "empty Aerodrome Name"
-    | length n > 4  = fail "max Aerodrome Name length (4) exceed"
-    | otherwise     = return (AerodromeName n)
+    | length n > 4 = fail "max Aerodrome Name length (4) exceed"
+    | otherwise = return (AerodromeName n)

@@ -1,15 +1,14 @@
 -- |
 -- ICAO Field Type 13 - Departure aerodrome and time.
 module Data.Icao.F13
-    ( Data (adep, time)
+    ( Data(adep, time)
     , adepParser
     , parser
-    )
-where
+    ) where
 
-import           Data.Icao.Location
-import           Data.Icao.Time
-import           Text.ParserCombinators.Parsec
+import Data.Aeromess.Parser
+import Data.Icao.Location
+import Data.Icao.Time
 
 -- | Field Type 13 data.
 data Data = Data
@@ -22,12 +21,12 @@ parser :: Parser Data
 parser = do
     adep <- aerodromeParser
     time <- hhmmParser
-    char '-'
+    dash
     return (Data adep time)
 
 -- | ADEP parser.
 adepParser :: Parser AerodromeName
 adepParser = do
     adep <- aerodromeParser
-    char '-'
+    dash
     return adep

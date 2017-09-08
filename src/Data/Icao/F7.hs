@@ -3,49 +3,46 @@
 module Data.Icao.F7
     ( AircraftIdentification
     , SsrCode
-    , SsrMode (..)
-    , Data (aircraftIdentification, ssrMode, ssrCode)
+    , SsrMode(..)
+    , Data(aircraftIdentification, ssrMode, ssrCode)
     , mkAircraftIdentification
     , mkSsrCode
     , parser
-    )
-where
+    ) where
 
-import           Data.Char
-import           Data.Maybe
-import           Text.ParserCombinators.Parsec
+import Data.Aeromess.Parser
+import Data.Char
+import Data.Maybe
 
 -- | Aircraft identification, a.k.a. call-sign, maximum of 7 uppercase characters.
-newtype AircraftIdentification = AircraftIdentification String deriving (Show, Eq)
+newtype AircraftIdentification =
+    AircraftIdentification String
+    deriving (Eq, Show)
 
 -- | Secondary Surveillance Radar mode.
-data SsrMode =
-      A
+data SsrMode
+    = A
     | C
     | S
-    deriving (Show, Eq, Enum)
+    deriving (Bounded, Enum, Eq, Read, Show)
 
 -- | Secondary Surveillance Rada code, 4 octal digits.
-newtype SsrCode = SsrCode String deriving (Show, Eq)
+newtype SsrCode =
+    SsrCode String
+    deriving (Eq, Show)
 
 -- | Field Type 7 data.
 data Data = Data
     { aircraftIdentification :: AircraftIdentification
-    , ssrMode                :: Maybe SsrMode
-    , ssrCode                :: Maybe SsrCode
+    , ssrMode :: Maybe SsrMode
+    , ssrCode :: Maybe SsrCode
     }
 
 modeParser :: Parser SsrMode
-modeParser = do
-    m <- oneOf "ACS"
-    return $ case m of
-        'A' -> A
-        'C' -> C
-        'S' -> S
+modeParser = enumeration :: Parser SsrMode
 
 codeParser :: Parser SsrCode
-codeParser =
-    fmap SsrCode (count 4 octDigit)
+codeParser = fmap SsrCode (octal 4)
 
 smcParser' :: Parser (SsrMode, SsrCode)
 smcParser' = do
@@ -54,38 +51,34 @@ smcParser' = do
     return (m, c)
 
 smcParser :: Parser (Maybe (SsrMode, SsrCode))
-smcParser =
-    optionMaybe (char '/' >> smcParser')
+smcParser = optional (slash >> smcParser')
 
 acIdParser :: Parser AircraftIdentification
 acIdParser = do
-    r <- many alphaNum
-    if length r > 7 then
-        unexpected "Invalid aircraft identification"
-    else
-        return (AircraftIdentification r)
+    r <- some upperNum
+    mkAircraftIdentification r
 
 -- | Field Type 7 'Data' parser.
 parser :: Parser Data
 parser = do
     acId <- acIdParser
     smc <- smcParser
-    char '-'
+    dash
     return (Data acId (fmap fst smc) (fmap snd smc))
 
 mkAircraftIdentification :: (Monad m) => String -> m AircraftIdentification
 mkAircraftIdentification n
     | length n <= 0 = fail "empty Aicraft identification"
-    | length n > 7  = fail "max Aircraft identification length (7) exceed"
-    | otherwise     = return (AircraftIdentification n)
+    | length n > 7 = fail "max Aircraft identification length (7) exceed"
+    | otherwise = return (AircraftIdentification n)
 
 validCode :: String -> Bool
 validCode c
-    | length c /= 4    = False
+    | length c /= 4 = False
     | all isOctDigit c = True
-    | otherwise        = False
+    | otherwise = False
 
 mkSsrCode :: (Monad m) => String -> m SsrCode
 mkSsrCode c
     | validCode c = return (SsrCode c)
-    | otherwise   = fail "SSR code must contain 4 octal digits"
+    | otherwise = fail "SSR code must contain 4 octal digits"

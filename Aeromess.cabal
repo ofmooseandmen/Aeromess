@@ -18,7 +18,8 @@ cabal-version:       >=1.10
 library
   hs-source-dirs:      src
   exposed-modules:     Data.Icao.AtsMessage
-  other-modules:       Data.Icao.F3
+  other-modules:       Data.Aeromess.Parser
+                     , Data.Icao.F3
                      , Data.Icao.F7
                      , Data.Icao.F13
                      , Data.Icao.F16
@@ -26,7 +27,6 @@ library
                      , Data.Icao.F18
                      , Data.Icao.F19
                      , Data.Icao.Location
-                     , Data.Icao.Switches
                      , Data.Icao.Time
   build-depends:       base >= 4.7 && < 5
                      , parsec >= 3.1.11 && < 4
@@ -38,7 +38,6 @@ test-suite Aeromess-test
   other-modules:       Data.Icao.ArrivalMessageSpec
                      , Data.Icao.DepartureMessageSpec
                      , Data.Icao.Expected
-                     , Data.Icao.Helper
   main-is:             Spec.hs
   build-depends:       base
                      , Aeromess

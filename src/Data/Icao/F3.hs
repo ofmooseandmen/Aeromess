@@ -3,13 +3,12 @@
 -- TODO: support number and reference data
 module Data.Icao.F3
     ( parser
-    )
-where
+    ) where
 
-import           Text.ParserCombinators.Parsec
+import Data.Aeromess.Parser
 
 parser :: Parser String
 parser = do
-    t <- count 3 upper
-    char '-'
+    t <- upperWord 3
+    dash
     return t

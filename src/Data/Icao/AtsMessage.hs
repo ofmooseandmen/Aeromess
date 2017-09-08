@@ -130,5 +130,4 @@ contentParser = do
 -- | 'AtsMessage' parser.
 parser :: Parser AtsMessage
 parser = betweenParentheses contentParser
-
 -- | FORMATTERS.

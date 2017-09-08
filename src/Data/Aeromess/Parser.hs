@@ -1,4 +1,5 @@
--- | Aeromess Parser.
+-- |
+-- Aeromess Parser.
 -- Allows to abstract away the choice of the underlying parser
 -- library (e.g. Parsec or MegaParsec).
 module Data.Aeromess.Parser
@@ -28,11 +29,11 @@ module Data.Aeromess.Parser
 
 import Control.Monad (mplus)
 import Data.Either
-import Data.Maybe
 import Data.Functor.Identity
+import Data.Maybe
 import qualified Text.Parsec as P
-import qualified Text.Parsec.Error as E
 import qualified Text.Parsec.Char as C
+import qualified Text.Parsec.Error as E
 
 -- | Parsing error.
 data Error = Error
@@ -129,14 +130,11 @@ upperWord :: Int -> Parser String
 upperWord n = P.count n P.upper
 
 -- Private
-
 err :: E.ParseError -> Error
 err e = Error (errMessage e) (col e)
 
 errMessage :: E.ParseError -> String
-errMessage e =
-    "unexpected " ++
-    E.messageString (head (E.errorMessages e))
+errMessage e = "unexpected " ++ E.messageString (head (E.errorMessages e))
 
 mapLeft :: (a -> c) -> Either a b -> Either c b
 mapLeft f (Left x) = Left (f x)

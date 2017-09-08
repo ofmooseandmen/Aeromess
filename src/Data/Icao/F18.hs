@@ -81,7 +81,11 @@ data Data
     | Pbn [PbnCapabilityCode]
     | Nav String
 
-data SwitchKey = PBN | STS | NAV deriving (Bounded, Enum, Eq, Read, Show)
+data SwitchKey
+    = PBN
+    | STS
+    | NAV
+    deriving (Bounded, Enum, Eq, Read, Show)
 
 emptyOtherInformation :: OtherInformation
 emptyOtherInformation = OtherInformation Nothing [] Nothing
@@ -101,32 +105,23 @@ switchKeys :: Parser String
 switchKeys = choice (map switchKey [minBound .. maxBound])
 
 eos :: Parser String
-eos =
-    try
-        (optional space >>
-         lookAhead
-             (switchKeys <|> string "-" <|> string ")"))
+eos = try (optional space >> lookAhead (switchKeys <|> string "-" <|> string ")"))
+
+sp :: SwitchKey -> Parser a -> (a -> Data) -> Parser Data
+sp k p f = do
+    switchKey k
+    r <- p
+    eos
+    return (f r)
 
 navParser :: Parser Data
-navParser = do
-    string "NAV/"
-    r <- some (upperNum <|> space)
-    eos
-    return (Nav r)
+navParser = sp NAV (some (upperNum <|> space)) Nav
 
 pbnParser :: Parser Data
-pbnParser = do
-    string "PBN/"
-    r <- some (enumeration :: Parser PbnCapabilityCode)
-    eos
-    return (Pbn r)
+pbnParser = sp PBN (some (enumeration :: Parser PbnCapabilityCode)) Pbn
 
 stsParser :: Parser Data
-stsParser = do
-    string "STS/"
-    r <- enumeration :: Parser SpecicalHandlingReason
-    eos
-    return (Sts r)
+stsParser = sp STS (enumeration :: Parser SpecicalHandlingReason) Sts
 
 switchParser :: Parser (Maybe Data)
 switchParser = optional (pbnParser <|> stsParser <|> navParser)

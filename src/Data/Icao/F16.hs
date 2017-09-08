@@ -4,7 +4,6 @@
 module Data.Icao.F16
     ( Data(ades, totalEet, altn1, altn2)
     , adesParser
-    , maybeAdesParser
     , parser
     ) where
 
@@ -29,10 +28,6 @@ adesParser = do
     ades <- aerodromeParser
     dash
     return ades
-
--- | maybe ADES parser.
-maybeAdesParser :: Parser (Maybe AerodromeName)
-maybeAdesParser = optional (try adesParser)
 
 -- | Field Type 16 'Data' parse.
 parser :: Parser Data

@@ -65,10 +65,10 @@ dash :: Parser Char
 dash = char '-'
 
 -- | Parses an enum representation. Returns the parsed value.
-enumeration :: (Enum a, Bounded a, Show a, Read a) => Parser a
+enumeration :: (Bounded a, Enum a, Show a, Read a) => Parser a
 enumeration = enum' show read
   where
-    enum' :: (Enum a, Bounded a) => (a -> String) -> (String -> a) -> Parser a
+    enum' :: (Bounded a, Enum a) => (a -> String) -> (String -> a) -> Parser a
     enum' s r = r <$> choice (map (string . s) [minBound .. maxBound])
 
 -- | Parses @p@ without consuming any input (unless @p@ fails).

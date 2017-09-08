@@ -27,6 +27,7 @@ module Data.Icao.AtsMessage
     , parser
     ) where
 
+import Data.Maybe
 import Data.Aeromess.Parser
 import qualified Data.Icao.F13 as F13
 import qualified Data.Icao.F16 as F16
@@ -88,7 +89,7 @@ arrParser :: Parser AtsMessage
 arrParser = do
     f7 <- F7.parser
     f13 <- F13.parser
-    orginalAdes <- F16.maybeAdesParser
+    orginalAdes <- optional (try F16.adesParser)
     f17 <- F17.parser
     return
         (ArrivalMessage

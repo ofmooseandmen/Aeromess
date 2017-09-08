@@ -8,7 +8,7 @@ import Data.Icao.Expected
 import Test.Hspec
 
 spec :: Spec
-spec = do
+spec =
     describe "Departure (DEP) message parser" $ do
         it "parses a DEP message containing only the mandatory fields" $
             parse parser "(DEP-CSA4311-EGPD1923-ENZV-0)" `shouldBe`

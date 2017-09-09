@@ -10,9 +10,11 @@ module Data.Icao.F19
 
 import Data.Aeromess.Parser
 import Data.Either
+import qualified Data.Icao.Switches as S
 import Data.Icao.Time
-import Data.List
+import Data.List hiding (words)
 import Data.Maybe
+import Prelude hiding (words)
 
 -- | Transmitter
 data Transmitter
@@ -54,7 +56,7 @@ data SupplementaryInformation = SupplementaryInformation
     , dinghies :: Dinghies -- ^ description of the dinghies caried on board
     , aircraftDescription :: Maybe String -- ^ the colour of the aircraft and any Significant markings (this may include the aircraft registration)
     , remarks :: Maybe String -- ^ plain language indicating any other survival equipment carried and any other useful remarks
-    , pilotName :: Maybe String -- ^ the name of the pilot-in-command
+    , pilotInCommand :: Maybe String -- ^ the name of the pilot-in-command and possibly the contact phone
     } deriving (Eq, Show)
 
 data Data
@@ -96,70 +98,89 @@ suppInfoFiller (Lj x) o = o {lifeJackets = x}
 suppInfoFiller (Di x) o = o {dinghies = x}
 suppInfoFiller (Ad x) o = o {aircraftDescription = Just x}
 suppInfoFiller (Rmk x) o = o {remarks = Just x}
-suppInfoFiller (Pn x) o = o {pilotName = Just x}
+suppInfoFiller (Pn x) o = o {pilotInCommand = Just x}
 
 mkSuppInformation :: [Data] -> SupplementaryInformation
 mkSuppInformation = foldl (flip suppInfoFiller) emptySupplementaryInformation
 
--- TODO the 4 following methods are duplicated with F18
-switchKey :: SwitchKey -> Parser String
-switchKey sk = string (show sk ++ "/")
-
-switchKeys :: Parser String
-switchKeys = choice (map switchKey [minBound .. maxBound])
-
-eos :: Parser String
-eos = try (optional space >> lookAhead (switchKeys <|> string "-" <|> string ")"))
-
-sp :: SwitchKey -> Parser a -> (a -> Data) -> Parser Data
-sp k p f = do
-    switchKey k
-    r <- p
-    eos
-    return (f r)
-
 feParser :: Parser Data
-feParser = sp E hhmmParser Fe
+feParser = S.parser E hhmmParser Fe
 
-pobParser :: Parser Data
-pobParser = sp P (positive 1 <|> positive 2 <|> positive 3) Pob
+pobParser :: Parser Int
+pobParser = positive 1 <|> positive 2 <|> positive 3
 
-atParser :: Parser Data
-atParser = sp R undefined At
+transmitterParser :: Parser Transmitter
+transmitterParser = do
+    c <- oneOf "UVE"
+    return $
+        case c of
+            'U' -> UHF
+            'V' -> VHF
+            'E' -> ELT
 
-seParser :: Parser Data
-seParser = sp S undefined Se
+atParser :: Parser [Transmitter]
+atParser = some (transmitterParser)
 
-ljParser :: Parser Data
-ljParser = sp J undefined Lj
+survEquipParser :: Parser SurvivalEquipment
+survEquipParser = do
+    c <- oneOf "PDMJ"
+    return $
+        case c of
+            'P' -> POLAR
+            'D' -> DESERT
+            'M' -> MARITIME
+            'J' -> JUNGLE
 
-diParser :: Parser Data
-diParser = sp D undefined Di
+seParser :: Parser [SurvivalEquipment]
+seParser = some survEquipParser
 
-adParser :: Parser Data
-adParser = sp A (some (upperNum <|> space)) Ad
+lfParser :: Parser LifeJacket
+lfParser = do
+    c <- oneOf "LF"
+    return $
+        case c of
+            'L' -> LIGHT
+            'F' -> FLUORESCEIN
 
-rmkParser :: Parser Data
-rmkParser = sp N (some (upperNum <|> space)) Rmk
+uvParser :: Parser LifeJacket
+uvParser = do
+    c <- oneOf "UV"
+    return $
+        case c of
+            'U' -> RADIO_UHF
+            'V' -> RADIO_VHF
 
-pnParser :: Parser Data
-pnParser = sp C undefined Pn
+ljParser :: Parser [LifeJacket]
+ljParser = do
+    uv <- many lfParser
+    try space
+    lf <- many uvParser
+    return (uv ++ lf)
+
+-- 2 NUMERICS giving the number of dinghies carried,
+-- 3 NUMERICS giving the total capacity, in persons carried, of all dinghies.
+-- C if dinghies are covered.
+-- The colour of the dinghies (e.g. RED).
+deParser :: Parser Dinghies
+deParser = do
+    nb <- optional (positive 2 <* space)
+    capa <- optional (positive 3 <* space)
+    cov <- optional (char 'C' <* space)
+    col <- optional word
+    return (Dinghies nb capa (maybe False (\s -> True) cov) col)
 
 switchParser :: Parser (Maybe Data)
 switchParser =
     optional
-        (feParser  <|>
-         pobParser <|>
-         atParser  <|>
-         seParser  <|>
-         ljParser  <|>
-         diParser  <|>
-         adParser  <|>
-         rmkParser <|>
-         pnParser)
-
-transmitter :: Parser Transmitter
-transmitter = enumeration :: Parser Transmitter
+        (S.parser E hhmmParser Fe <|>
+         S.parser P pobParser Pob <|>
+         S.parser R atParser At   <|>
+         S.parser S seParser Se   <|>
+         S.parser J ljParser Lj   <|>
+         S.parser D deParser Di   <|>
+         S.parser A text Ad       <|>
+         S.parser N text Rmk      <|>
+         S.parser C text Pn)
 
 parser :: Parser SupplementaryInformation
 parser = do

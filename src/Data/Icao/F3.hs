@@ -9,6 +9,6 @@ import Data.Aeromess.Parser
 
 parser :: Parser String
 parser = do
-    t <- upperWord 3
+    t <- word
     dash
     return t

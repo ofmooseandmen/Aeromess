@@ -13,17 +13,17 @@ import Data.Icao.Time
 
 -- | Field Type 16 data.
 data Data = Data
-    { ades :: AerodromeName
+    { ades :: Aerodrome
     , totalEet :: Hhmm
-    , altn1 :: Maybe AerodromeName
-    , altn2 :: Maybe AerodromeName
+    , altn1 :: Maybe Aerodrome
+    , altn2 :: Maybe Aerodrome
     }
 
-altn :: Parser (Maybe AerodromeName)
+altn :: Parser (Maybe Aerodrome)
 altn = optional (space >> aerodromeParser)
 
 -- | ADES parser.
-adesParser :: Parser AerodromeName
+adesParser :: Parser Aerodrome
 adesParser = do
     ades <- aerodromeParser
     dash

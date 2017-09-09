@@ -3,7 +3,7 @@
 -- Allows to abstract away the choice of the underlying parser
 -- library (e.g. Parsec or MegaParsec).
 module Data.Aeromess.Parser
-    ( Error
+    ( Error(..)
     , Parser
     , (<|>)
     , betweenParentheses
@@ -11,20 +11,22 @@ module Data.Aeromess.Parser
     , choice
     , dash
     , enumeration
+    , identifier
     , lookAhead
     , many
     , octal
     , oneOf
     , optional
     , positive
-    , parse
+    , runParser
     , slash
     , some
     , space
     , string
+    , text
     , try
-    , upperNum
-    , upperWord
+    , word
+    , words
     ) where
 
 import Control.Monad (mplus)
@@ -34,6 +36,7 @@ import Data.Maybe
 import qualified Text.Parsec as P
 import qualified Text.Parsec.Char as C
 import qualified Text.Parsec.Error as E
+import Prelude hiding (words)
 
 -- | Parsing error.
 data Error = Error
@@ -71,6 +74,10 @@ enumeration = enum' show read
     enum' :: (Bounded a, Enum a) => (a -> String) -> (String -> a) -> Parser a
     enum' s r = r <$> choice (map (string . s) [minBound .. maxBound])
 
+-- | Parses at 1 or more upper or numerical character(s). Returns the parsed string.
+identifier :: Parser String
+identifier = some (C.upper <|> C.digit)
+
 -- | Parses @p@ without consuming any input (unless @p@ fails).
 lookAhead :: Parser a -> Parser a
 lookAhead = P.lookAhead
@@ -93,8 +100,8 @@ optional = P.optionMaybe
 
 -- | Parses the given text using the given parser.
 -- Returns either an 'Error' ('Left') or the parsed result ('Right').
-parse :: Parser a -> String -> Either Error a
-parse p s = mapLeft err (P.parse p "" s)
+runParser :: Parser a -> String -> Either Error a
+runParser p s = mapLeft err (P.parse p "" s)
 
 -- | Parses a positive number of n digits. Returns the parsed number
 positive :: Int -> Parser Int
@@ -116,25 +123,29 @@ space = P.space
 string :: String -> Parser String
 string = C.string
 
+-- | Parses 1 to many character(s) expect for '-', '/' and parentheses. Returns the parsed text.
+text :: Parser String
+text = some (P.noneOf("-/()"))
+
 -- | The parser @@try p@ behaves like parser @p@,
 -- except that it pretends that it hasn't consumed any input when an error occurs.
 try :: Parser a -> Parser a
 try = P.try
 
--- | Parses any upper or numerical character.
-upperNum :: Parser Char
-upperNum = C.upper <|> C.digit
+-- | Parses 1 to many uppercase character(s). Returns the parsed word.
+word :: Parser String
+word = some P.upper
 
--- | Parses a word in uppercase of n character. Returns the parsed word.
-upperWord :: Int -> Parser String
-upperWord n = P.count n P.upper
+-- | Parses 1 to many 'word' delimitted by 'space's. Returns the parsed words with spaces.
+words :: Parser String
+words = some (P.upper <|> space)
 
 -- Private
 err :: E.ParseError -> Error
 err e = Error (errMessage e) (col e)
 
 errMessage :: E.ParseError -> String
-errMessage e = "unexpected " ++ E.messageString (head (E.errorMessages e))
+errMessage e = E.messageString (head (E.errorMessages e))
 
 mapLeft :: (a -> c) -> Either a b -> Either c b
 mapLeft f (Left x) = Left (f x)

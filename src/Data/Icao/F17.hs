@@ -9,10 +9,11 @@ module Data.Icao.F17
 import Data.Aeromess.Parser
 import Data.Icao.Location
 import Data.Icao.Time
+import Prelude hiding (words)
 
 -- | Field Type 17 data.
 data Data = Data
-    { adar :: AerodromeName
+    { adar :: Aerodrome
     , ata :: Hhmm
     , adarName :: Maybe String
     }
@@ -22,5 +23,5 @@ parser :: Parser Data
 parser = do
     adar <- aerodromeParser
     ata <- hhmmParser
-    adarName <- optional (space >> some (choice [upperNum, space]))
+    adarName <- optional (space >> words)
     return (Data adar ata adarName)

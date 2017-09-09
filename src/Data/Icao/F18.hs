@@ -11,7 +11,9 @@ module Data.Icao.F18
     ) where
 
 import Data.Aeromess.Parser
+import qualified Data.Icao.Switches as S
 import Data.Maybe
+import Prelude hiding (words)
 
 -- | PBN (Performance Base Navigation) capabilities code.
 -- Provides both RNAV (Area Navigation) and RNP (Required Navigation Performance) capabilities.
@@ -98,33 +100,18 @@ otherInfoFiller (Nav x) o = o {navigationEquipments = Just x}
 mkOtherInformation :: [Data] -> OtherInformation
 mkOtherInformation = foldl (flip otherInfoFiller) emptyOtherInformation
 
-switchKey :: SwitchKey -> Parser String
-switchKey sk = string (show sk ++ "/")
+pbnParser :: Parser [PbnCapabilityCode]
+pbnParser = some (enumeration :: Parser PbnCapabilityCode)
 
-switchKeys :: Parser String
-switchKeys = choice (map switchKey [minBound .. maxBound])
-
-eos :: Parser String
-eos = try (optional space >> lookAhead (switchKeys <|> string "-" <|> string ")"))
-
-sp :: SwitchKey -> Parser a -> (a -> Data) -> Parser Data
-sp k p f = do
-    switchKey k
-    r <- p
-    eos
-    return (f r)
-
-navParser :: Parser Data
-navParser = sp NAV (some (upperNum <|> space)) Nav
-
-pbnParser :: Parser Data
-pbnParser = sp PBN (some (enumeration :: Parser PbnCapabilityCode)) Pbn
-
-stsParser :: Parser Data
-stsParser = sp STS (enumeration :: Parser SpecicalHandlingReason) Sts
+stsParser :: Parser SpecicalHandlingReason
+stsParser = enumeration :: Parser SpecicalHandlingReason
 
 switchParser :: Parser (Maybe Data)
-switchParser = optional (pbnParser <|> stsParser <|> navParser)
+switchParser =
+    optional
+        (S.parser STS stsParser Sts <|>
+         S.parser PBN pbnParser Pbn <|>
+         S.parser NAV words Nav)
 
 parser :: Parser OtherInformation
 parser = do

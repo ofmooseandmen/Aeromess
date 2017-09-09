@@ -6,8 +6,10 @@
 module Data.Icao.AtsMessage
     ( AtsMessage(..)
     -- re-exported data types
-    , AerodromeName
+    , Aerodrome
     , Hhmm(hour, minute)
+    , SignificantPoint(CodedDesignator, Position, BearingDistance,
+                 latitude, longitude, reference, bearing, distance)
     , F7.AircraftIdentification
     , F7.SsrCode
     , F7.SsrMode(..)
@@ -15,19 +17,21 @@ module Data.Icao.AtsMessage
     , F18.SpecicalHandlingReason(..)
     , F18.PbnCapabilityCode(..)
     -- re-exported smart constructors
-    , mkAerodromeName
+    , mkAerodrome
+    , mkHhmm
+    , mkCodedDesignator
+    , mkPosition
+    , mkBearingDistance
     , F7.mkAircraftIdentification
     , F7.mkSsrCode
-    , mkHhmm
     , F18.emptyOtherInformation
     -- re-exported Parser
     , Parser
-    , Error
+    , Error(message, column)
     , parse
     , parser
     ) where
 
-import Data.Maybe
 import Data.Aeromess.Parser
 import qualified Data.Icao.F13 as F13
 import qualified Data.Icao.F16 as F16
@@ -37,6 +41,7 @@ import qualified Data.Icao.F3 as F3
 import qualified Data.Icao.F7 as F7
 import Data.Icao.Location
 import Data.Icao.Time
+import Data.Maybe
 
 -- | An ICAO 4444 ATS message.
 data AtsMessage
@@ -53,13 +58,13 @@ data AtsMessage
           -- | SSR code.
        , ssrCode :: Maybe F7.SsrCode
           -- | aerodrome of departure.
-       , adep :: AerodromeName
+       , adep :: Aerodrome
           -- | estimated off-block time.
        , eobt :: Hhmm
           -- | aerodrome of arrival, only in case of a diversionary landing.
-       , originalAdes :: Maybe AerodromeName
+       , originalAdes :: Maybe Aerodrome
           -- | actual aerodrome of arrival
-       , adar :: AerodromeName
+       , adar :: Aerodrome
           -- | actual time of arrival.
        , ata :: Hhmm
           -- | name of arrival aerodrome, if 'adar' is 'ZZZZ'.
@@ -74,11 +79,11 @@ data AtsMessage
           -- | SSR code
        , ssrCode :: Maybe F7.SsrCode
           -- | aerodrome of departure.
-       , adep :: AerodromeName
+       , adep :: Aerodrome
           -- | actual time of departure.
        , atd :: Hhmm
           -- | aerodrome of arrival.
-       , ades :: AerodromeName
+       , ades :: Aerodrome
           -- | other information.
        , otherInformation :: F18.OtherInformation }
     deriving (Eq, Show)
@@ -131,4 +136,8 @@ contentParser = do
 -- | 'AtsMessage' parser.
 parser :: Parser AtsMessage
 parser = betweenParentheses contentParser
--- | FORMATTERS.
+
+-- | Parses the given textual representation of an 'AtsMessage'.
+-- return either an 'Error' ('Left') or the parsed 'AtsMessage' ('Right').
+parse :: String -> Either Error AtsMessage
+parse s = runParser parser s

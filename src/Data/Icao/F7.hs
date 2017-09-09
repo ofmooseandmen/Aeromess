@@ -55,7 +55,7 @@ smcParser = optional (slash >> smcParser')
 
 acIdParser :: Parser AircraftIdentification
 acIdParser = do
-    r <- some upperNum
+    r <- identifier
     mkAircraftIdentification r
 
 -- | Field Type 7 'Data' parser.
@@ -67,10 +67,11 @@ parser = do
     return (Data acId (fmap fst smc) (fmap snd smc))
 
 mkAircraftIdentification :: (Monad m) => String -> m AircraftIdentification
-mkAircraftIdentification n
-    | length n <= 0 = fail "empty Aicraft identification"
-    | length n > 7 = fail "max Aircraft identification length (7) exceed"
-    | otherwise = return (AircraftIdentification n)
+mkAircraftIdentification s
+    | null s = fail "empty aicraft identification"
+    | length s > 7 = fail "max aircraft identification length (7) exceed"
+    | not (all (\c -> isDigit c || isUpper c) s) = fail ("invalid aircraft identification=" ++ s)
+    | otherwise = return (AircraftIdentification s)
 
 validCode :: String -> Bool
 validCode c
@@ -81,4 +82,4 @@ validCode c
 mkSsrCode :: (Monad m) => String -> m SsrCode
 mkSsrCode c
     | validCode c = return (SsrCode c)
-    | otherwise = fail "SSR code must contain 4 octal digits"
+    | otherwise = fail ("Invalid SSR code=" ++ c ++ ", expected 4 octal digits")

@@ -1,16 +1,25 @@
 module Data.Icao.Expected
-    ( mkAerodromeName'
+    ( errorStr
+    , mkAerodrome'
     , mkAircraftIdentification'
+    , mkBearingDistance'
+    , mkCodedDesignator'
     , mkHhmm'
+    , mkPosition'
     , mkSsrCode'
     ) where
 
+import Data.Either
 import Data.Icao.AtsMessage
 import Data.Maybe
 
-mkAerodromeName' :: String -> AerodromeName
-mkAerodromeName' n =
-    fromMaybe (error "invalid aerodrome name") (mkAerodromeName n)
+errorStr :: Either Error a -> String
+errorStr (Left e) = show e
+errorStr _ = "?????"
+
+mkAerodrome' :: String -> Aerodrome
+mkAerodrome' n =
+    fromMaybe (error "invalid aerodrome name") (mkAerodrome n)
 
 mkAircraftIdentification' :: String -> AircraftIdentification
 mkAircraftIdentification' n =
@@ -18,8 +27,17 @@ mkAircraftIdentification' n =
         (error "invalid aircraft identification")
         (mkAircraftIdentification n)
 
-mkSsrCode' :: String -> SsrCode
-mkSsrCode' c = fromMaybe (error "invalid SSR code") (mkSsrCode c)
+mkBearingDistance' :: String -> Int -> Int -> SignificantPoint
+mkBearingDistance' n b d = fromMaybe (error "invalid bearing/distance") (mkBearingDistance n b d)
+
+mkCodedDesignator' :: String -> SignificantPoint
+mkCodedDesignator' n = fromMaybe (error "invalid hour/minute") (mkCodedDesignator n)
 
 mkHhmm' :: Int -> Int -> Hhmm
 mkHhmm' h m = fromMaybe (error "invalid hour/minute") (mkHhmm h m)
+
+mkPosition' :: Float -> Float -> SignificantPoint
+mkPosition' lat long = fromMaybe (error "invalid latitude/longitude") (mkPosition lat long)
+
+mkSsrCode' :: String -> SsrCode
+mkSsrCode' c = fromMaybe (error "invalid SSR code") (mkSsrCode c)

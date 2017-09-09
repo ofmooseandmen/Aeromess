@@ -4,11 +4,16 @@
 module Data.Icao.Time
     ( Hhmm(hour, minute)
     , Date(year, month, day)
+    -- re-exported Parser
+    , Parser
+    , Error(message, column)
     , hhmmParser
     , mkHhmm
+    , parseHhmm
     ) where
 
 import Data.Aeromess.Parser
+import Data.Either
 
 -- |'Hhmm' represents a time or duration expressed with hours and minutes only.
 data Hhmm = Hhmm
@@ -29,6 +34,11 @@ hhmmParser = do
     hour <- positive 2
     minute <- positive 2
     mkHhmm hour minute
+
+-- | Parses the given textual representation of a 'Hhmm'.
+-- return either an 'Error' ('Left') or the parsed 'Hhmm' ('Right').
+parseHhmm :: String -> Either Error Hhmm
+parseHhmm s = runParser hhmmParser s
 
 mkHhmm :: (Monad m) => Int -> Int -> m Hhmm
 mkHhmm hh mm

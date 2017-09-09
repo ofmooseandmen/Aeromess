@@ -12,7 +12,7 @@ import Data.Icao.Time
 
 -- | Field Type 13 data.
 data Data = Data
-    { adep :: AerodromeName
+    { adep :: Aerodrome
     , time :: Hhmm
     }
 
@@ -25,7 +25,7 @@ parser = do
     return (Data adep time)
 
 -- | ADEP parser.
-adepParser :: Parser AerodromeName
+adepParser :: Parser Aerodrome
 adepParser = do
     adep <- aerodromeParser
     dash

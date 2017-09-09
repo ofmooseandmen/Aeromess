@@ -11,35 +11,35 @@ spec :: Spec
 spec =
     describe "Departure (DEP) message parser" $ do
         it "parses a DEP message containing only the mandatory fields" $
-            parse parser "(DEP-CSA4311-EGPD1923-ENZV-0)" `shouldBe`
+            parse "(DEP-CSA4311-EGPD1923-ENZV-0)" `shouldBe`
             Right
                 (DepartureMessage
                      (mkAircraftIdentification' "CSA4311")
                      Nothing
                      Nothing
-                     (mkAerodromeName' "EGPD")
+                     (mkAerodrome' "EGPD")
                      (mkHhmm' 19 23)
-                     (mkAerodromeName' "ENZV")
+                     (mkAerodrome' "ENZV")
                      emptyOtherInformation)
         it "parses a DEP message containing the SSR mode and code" $
-            parse parser "(DEP-AFR1/C3440-ESSA0800-LFPG-0)" `shouldBe`
+            parse "(DEP-AFR1/C3440-ESSA0800-LFPG-0)" `shouldBe`
             Right
                 (DepartureMessage
                      (mkAircraftIdentification' "AFR1")
                      (Just C)
                      (Just (mkSsrCode' "3440"))
-                     (mkAerodromeName' "ESSA")
+                     (mkAerodrome' "ESSA")
                      (mkHhmm' 8 0)
-                     (mkAerodromeName' "LFPG")
+                     (mkAerodrome' "LFPG")
                      emptyOtherInformation)
         it "parses a DEP message containing a F18 with STS and PBN" $
-            parse parser "(DEP-CSA4311-EGPD1923-ENZV-STS/MARSA PBN/A1T1)" `shouldBe`
+            parse "(DEP-CSA4311-EGPD1923-ENZV-STS/MARSA PBN/A1T1)" `shouldBe`
             Right
                 (DepartureMessage
                      (mkAircraftIdentification' "CSA4311")
                      Nothing
                      Nothing
-                     (mkAerodromeName' "EGPD")
+                     (mkAerodrome' "EGPD")
                      (mkHhmm' 19 23)
-                     (mkAerodromeName' "ENZV")
+                     (mkAerodrome' "ENZV")
                      (OtherInformation (Just MARSA) [A1, T1] Nothing))

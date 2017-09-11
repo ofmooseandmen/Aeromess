@@ -98,11 +98,23 @@ data Data
     = Sts SpecicalHandlingReason
     | Pbn [PbnCapabilityCode]
     | Nav FreeText
+    | Com FreeText
+    | Dat FreeText
+    | Sur FreeText
+    | Dep SignificantPoint
+    | Dest SignificantPoint
+    | Dof Date
 
 data SwitchKey
-    = PBN
-    | STS
+    = STS
+    | PBN
     | NAV
+    | COM
+    | DAT
+    | SUR
+    | DEP
+    | DEST
+    | DOF
     deriving (Bounded, Enum, Eq, Read, Show)
 
 -- | Returns empty 'OtherInformation'.
@@ -114,6 +126,12 @@ otherInfoFiller :: Data -> OtherInformation -> OtherInformation
 otherInfoFiller (Sts x) o = o {specicalHandlingReason = Just x}
 otherInfoFiller (Pbn x) o = o {pbnCapabilities = x}
 otherInfoFiller (Nav x) o = o {navigationEquipments = Just x}
+otherInfoFiller (Com x) o = o {communicationEquipments = Just x}
+otherInfoFiller (Dat x) o = o {dataCommunicationEquipments = Just x}
+otherInfoFiller (Sur x) o = o {surveillanceEquipments = Just x}
+otherInfoFiller (Dep x) o = o {departure = Just x}
+otherInfoFiller (Dest x) o = o {destination = Just x}
+otherInfoFiller (Dof x) o = o {dof = Just x}
 
 mkOtherInformation :: [Data] -> OtherInformation
 mkOtherInformation = foldl (flip otherInfoFiller) emptyOtherInformation
@@ -126,16 +144,24 @@ stsParser = enumeration :: Parser SpecicalHandlingReason
 
 switchParser :: Parser (Maybe Data)
 switchParser =
-    optional
-        (S.parser STS stsParser Sts <|>
-         S.parser PBN pbnParser Pbn <|>
-         S.parser NAV freeTextParser Nav)
+    S.parser STS stsParser Sts <|>
+    S.parser PBN pbnParser Pbn <|>
+    S.parser NAV freeTextParser Nav <|>
+    S.parser COM freeTextParser Com <|>
+    S.parser DAT freeTextParser Dat <|>
+    S.parser SUR freeTextParser Sur <|>
+    S.parser DEP significantPointParser Dep <|>
+    S.parser DEST significantPointParser Dest <|>
+    S.parser DOF dateParser Dof
 
 -- | Field Type 18 parser.
 parser :: Parser OtherInformation
 parser = do
-    pbn <- switchParser
-    sts <- switchParser
-    nav <- switchParser
-    optional (oneOf "0-")
-    return (mkOtherInformation (catMaybes [pbn, sts, nav]))
+    empty <- optional (char '0')
+    if isJust empty then
+        return emptyOtherInformation
+    else
+        do
+            s <- some switchParser
+            optional dash
+            return (mkOtherInformation (catMaybes s))

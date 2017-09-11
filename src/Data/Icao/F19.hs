@@ -139,9 +139,6 @@ suppInfoFiller (Pn x) o = o {pilotInCommand = Just x}
 mkSuppInformation :: [Data] -> SupplementaryInformation
 mkSuppInformation = foldl (flip suppInfoFiller) emptySupplementaryInformation
 
-feParser :: Parser Data
-feParser = S.parser E hhmmParser Fe
-
 pobParser :: Parser Int
 pobParser = positive 1 <|> positive 2 <|> positive 3
 
@@ -207,28 +204,19 @@ deParser = do
 
 switchParser :: Parser (Maybe Data)
 switchParser =
-    optional
-        (S.parser E hhmmParser Fe      <|> 
-         S.parser P pobParser Pob      <|>
-         S.parser R atParser At        <|>
-         S.parser S seParser Se        <|>
-         S.parser J ljParser Lj        <|>
-         S.parser D deParser Di        <|>
-         S.parser A freeTextParser Ad  <|>
-         S.parser N freeTextParser Rmk <|>
-         S.parser C freeTextParser Pn)
+    S.parser E hhmmParser Fe      <|>
+    S.parser P pobParser Pob      <|>
+    S.parser R atParser At        <|>
+    S.parser S seParser Se        <|>
+    S.parser J ljParser Lj        <|>
+    S.parser D deParser Di        <|>
+    S.parser A freeTextParser Ad  <|>
+    S.parser N freeTextParser Rmk <|>
+    S.parser C freeTextParser Pn
 
 -- | 'SupplementaryInformation' parser.
 parser :: Parser SupplementaryInformation
 parser = do
-    fe <- switchParser
-    pob <- switchParser
-    at <- switchParser
-    se <- switchParser
-    lj <- switchParser
-    di <- switchParser
-    ad <- switchParser
-    rmk <- switchParser
-    pn <- switchParser
+    s <- some switchParser
     optional dash
-    return (mkSuppInformation (catMaybes [fe, pob, at, se, lj, di, ad, rmk, pn]))
+    return (mkSuppInformation (catMaybes s))

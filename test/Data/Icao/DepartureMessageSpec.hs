@@ -33,7 +33,7 @@ spec =
                      (mkAerodrome' "LFPG")
                      emptyOtherInformation)
         it "parses a DEP message containing a F18 with STS and PBN" $
-            parse "(DEP-CSA4311-EGPD1923-ENZV-STS/MARSA PBN/A1T1)" `shouldBe`
+            parse "(DEP-CSA4311-EGPD1923-ENZV-PBN/A1T1 STS/MARSA)" `shouldBe`
             Right
                 (DepartureMessage
                      (mkAircraftIdentification' "CSA4311")
@@ -52,3 +52,23 @@ spec =
                           Nothing
                           Nothing
                           Nothing))
+        it "parses a DEP message containing a F18 with DEST and DOF" $
+            parse "(DEP-CSA4311-EGPD1923-ZZZZ-DEST/ESMS DOF/870601)" `shouldBe`
+            Right
+                (DepartureMessage
+                       (mkAircraftIdentification' "CSA4311")
+                       Nothing
+                       Nothing
+                       (mkAerodrome' "EGPD")
+                       (mkHhmm' 19 23)
+                       (mkAerodrome' "ZZZZ")
+                       (OtherInformation
+                            Nothing
+                            []
+                            Nothing
+                            Nothing
+                            Nothing
+                            Nothing
+                            Nothing
+                            (Just (mkCodedDesignator' "ESMS"))
+                            (Just (mkDate' 87 6 1))))

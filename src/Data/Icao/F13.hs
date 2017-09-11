@@ -16,7 +16,7 @@ data Data = Data
     , time :: Hhmm
     }
 
--- | Field Type 13 'Data' parser.
+-- | Field Type 13 parser.
 parser :: Parser Data
 parser = do
     adep <- aerodromeParser

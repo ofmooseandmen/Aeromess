@@ -18,7 +18,7 @@ data Data = Data
     , adarName :: Maybe String
     }
 
--- | Field Type 17 'Data' parser.
+-- | Field Type 17 parser.
 parser :: Parser Data
 parser = do
     adar <- aerodromeParser

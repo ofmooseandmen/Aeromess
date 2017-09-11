@@ -1,5 +1,3 @@
-{-# LANGUAGE DeriveAnyClass #-}
-
 -- |
 -- ICAO Field Type 18 - Other information.
 module Data.Icao.F18
@@ -67,8 +65,8 @@ data SpecicalHandlingReason
 
 -- | Other information.
 data OtherInformation = OtherInformation
-      -- | Reason for special handling by ATS, e.g. a search and rescue mission.
-    { specicalHandlingReason :: Maybe SpecicalHandlingReason
+    { -- | Reason for special handling by ATS, e.g. a search and rescue mission.
+      specicalHandlingReason :: Maybe SpecicalHandlingReason
       -- | RNAV and RNP capabilites.
     , pbnCapabilities :: [PbnCapabilityCode]
       -- | Significant data related to navigation equipment, other than specified in PBN/,
@@ -89,6 +87,7 @@ data SwitchKey
     | NAV
     deriving (Bounded, Enum, Eq, Read, Show)
 
+-- | Returns empty 'OtherInformation'.
 emptyOtherInformation :: OtherInformation
 emptyOtherInformation = OtherInformation Nothing [] Nothing
 
@@ -113,6 +112,7 @@ switchParser =
          S.parser PBN pbnParser Pbn <|>
          S.parser NAV words Nav)
 
+-- | Field Type 18 parser.
 parser :: Parser OtherInformation
 parser = do
     pbn <- switchParser

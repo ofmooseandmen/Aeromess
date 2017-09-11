@@ -8,7 +8,7 @@ import Data.Icao.Time
 import Test.Hspec
 
 spec :: Spec
-spec =
+spec = do
     describe "parseHhmm" $ do
         it "parses 0154" $ parseHhmm "0154" `shouldBe` Right (mkHhmm' 1 54)
         it "parses 1540" $ parseHhmm "1540" `shouldBe` Right (mkHhmm' 15 40)

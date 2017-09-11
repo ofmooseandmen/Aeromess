@@ -7,6 +7,7 @@ module Data.Icao.F3
 
 import Data.Aeromess.Parser
 
+-- | Field Type 3 parser.
 parser :: Parser String
 parser = do
     t <- word

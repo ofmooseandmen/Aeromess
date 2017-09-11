@@ -1,15 +1,24 @@
 -- |
 -- ICAO Field Type 19 - Supplementary information.
 module Data.Icao.F19
-    ( Dinghies(..)
+    ( Dinghies(number, totalCapacity, covered, colour)
     , Transmitter(..)
     , SurvivalEquipment(..)
     , LifeJacket(..)
     , SupplementaryInformation(..)
+    , emptyDinghies
+    , emptySupplementaryInformation
+    , dinghiesWithNumber
+    , dinghiesWithCapacity
+    , dinghiesWithCover
+    , dinghiesWithColour
+    , parser
     ) where
 
 import Data.Aeromess.Parser
+import Data.Char
 import Data.Either
+import Data.Icao.FreeText
 import qualified Data.Icao.Switches as S
 import Data.Icao.Time
 import Data.List hiding (words)
@@ -47,6 +56,7 @@ data Dinghies = Dinghies
     , colour :: Maybe String -- ^ the colour of the dinghies.
     } deriving (Eq, Show)
 
+-- | Supplementary information data.
 data SupplementaryInformation = SupplementaryInformation
     { fuelEndurance :: Maybe Hhmm -- ^ the fuel endurance in hours and minutes
     , personsOnBoard :: Maybe Int -- ^ the total number of persons on board, when so prescribed by the appropriate ATS authority
@@ -54,9 +64,9 @@ data SupplementaryInformation = SupplementaryInformation
     , survivalEquipments :: [SurvivalEquipment] -- ^ survival equipment(s) carried on board
     , lifeJackets :: [LifeJacket] -- ^ type of life jackets carried on board
     , dinghies :: Dinghies -- ^ description of the dinghies caried on board
-    , aircraftDescription :: Maybe String -- ^ the colour of the aircraft and any Significant markings (this may include the aircraft registration)
-    , remarks :: Maybe String -- ^ plain language indicating any other survival equipment carried and any other useful remarks
-    , pilotInCommand :: Maybe String -- ^ the name of the pilot-in-command and possibly the contact phone
+    , aircraftDescription :: Maybe FreeText -- ^ the colour of the aircraft and any Significant markings (this may include the aircraft registration)
+    , remarks :: Maybe FreeText -- ^ plain language indicating any other survival equipment carried and any other useful remarks
+    , pilotInCommand :: Maybe FreeText -- ^ the name of the pilot-in-command and possibly the contact phone
     } deriving (Eq, Show)
 
 data Data
@@ -66,9 +76,9 @@ data Data
     | Se [SurvivalEquipment]
     | Lj [LifeJacket]
     | Di Dinghies
-    | Ad String
-    | Rmk String
-    | Pn String
+    | Ad FreeText
+    | Rmk FreeText
+    | Pn FreeText
 
 data SwitchKey
     = E
@@ -82,9 +92,35 @@ data SwitchKey
     | C
     deriving (Bounded, Enum, Eq, Read, Show)
 
+-- | Returns empty 'Dinghies'.
 emptyDinghies :: Dinghies
 emptyDinghies = Dinghies Nothing Nothing False Nothing
 
+-- | Sets the number of dinghies. Fails if given number is not in
+-- range [0 .. 99].
+dinghiesWithNumber :: (Monad m) => Int -> Dinghies -> m Dinghies
+dinghiesWithNumber n d
+    | n < 0 || n > 99 = fail ("invalid number of dinghies=" ++ show n)
+    | otherwise = return (d {number = Just n})
+
+-- | Sets the total capacity of the dinghies. Fails if given number is not in
+-- range [0 .. 999].
+dinghiesWithCapacity :: (Monad m) => Int -> Dinghies -> m Dinghies
+dinghiesWithCapacity c d
+    | c < 0 || c > 999 = fail ("invalid total capacity=" ++ show c)
+    | otherwise = return (d {totalCapacity = Just c})
+
+-- | Sets whether the dinghies are covered.
+dinghiesWithCover :: (Monad m) => Bool -> Dinghies -> m Dinghies
+dinghiesWithCover c d = return (d {covered = c})
+
+-- | Sets the colour of the dinghies. Fails if given colour is not a plain word.
+dinghiesWithColour :: (Monad m) => String -> Dinghies -> m Dinghies
+dinghiesWithColour c d
+    | not (all isUpper c) = fail ("invalid dinghies colour=" ++ c)
+    | otherwise = return (d {colour = Just c})
+
+-- | Returns empty 'SupplementaryInformation'.
 emptySupplementaryInformation :: SupplementaryInformation
 emptySupplementaryInformation =
     SupplementaryInformation Nothing Nothing [] [] [] emptyDinghies Nothing Nothing Nothing
@@ -119,7 +155,7 @@ transmitterParser = do
             'E' -> ELT
 
 atParser :: Parser [Transmitter]
-atParser = some (transmitterParser)
+atParser = some transmitterParser
 
 survEquipParser :: Parser SurvivalEquipment
 survEquipParser = do
@@ -167,21 +203,22 @@ deParser = do
     capa <- optional (positive 3 <* space)
     cov <- optional (char 'C' <* space)
     col <- optional word
-    return (Dinghies nb capa (maybe False (\s -> True) cov) col)
+    return (Dinghies nb capa (isJust cov) col)
 
 switchParser :: Parser (Maybe Data)
 switchParser =
     optional
-        (S.parser E hhmmParser Fe <|>
-         S.parser P pobParser Pob <|>
-         S.parser R atParser At   <|>
-         S.parser S seParser Se   <|>
-         S.parser J ljParser Lj   <|>
-         S.parser D deParser Di   <|>
-         S.parser A text Ad       <|>
-         S.parser N text Rmk      <|>
-         S.parser C text Pn)
+        (S.parser E hhmmParser Fe      <|> 
+         S.parser P pobParser Pob      <|>
+         S.parser R atParser At        <|>
+         S.parser S seParser Se        <|>
+         S.parser J ljParser Lj        <|>
+         S.parser D deParser Di        <|>
+         S.parser A freeTextParser Ad  <|>
+         S.parser N freeTextParser Rmk <|>
+         S.parser C freeTextParser Pn)
 
+-- | 'SupplementaryInformation' parser.
 parser :: Parser SupplementaryInformation
 parser = do
     fe <- switchParser

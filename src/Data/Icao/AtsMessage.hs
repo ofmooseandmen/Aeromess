@@ -51,7 +51,7 @@ data AtsMessage
     -- when a controlled flight which has experienced failure of two-way communication
     -- has landed, by the aerodrome control tower at the arrival aerodrome.
     = ArrivalMessage
-          -- | aircraft identification.
+         -- | aircraft identification.
        { aircraftIndentification :: F7.AircraftIdentification
           -- | SSR mode.
        , ssrMode :: Maybe F7.SsrMode
@@ -72,7 +72,7 @@ data AtsMessage
     -- | Departure message transmitted transmitted by the ATS unit serving the
     -- departure aerodrome to all recipients of basic flight plan data.
     | DepartureMessage
-          -- | aircraft identification.
+         -- | aircraft identification. 
        { aircraftIndentification :: F7.AircraftIdentification
           -- | SSR mode
        , ssrMode :: Maybe F7.SsrMode

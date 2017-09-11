@@ -16,10 +16,11 @@ module Data.Icao.Location
     ) where
 
 import Data.Aeromess.Parser
+import Data.Maybe
 import Data.Char
 import Data.Either
 
--- the name of an aerodrome, 4 uppercase characters.
+-- | the name of an aerodrome, 4 uppercase characters.
 newtype Aerodrome =
     Aerodrome String
     deriving (Eq, Show)
@@ -46,10 +47,9 @@ aerodromeParser = do
 -- | Parses the given textual representation of an 'Aerodrome'.
 -- return either an 'Error' ('Left') or the parsed 'Aerodrome' ('Right').
 parseAerodrome :: String -> Either Error Aerodrome
-parseAerodrome s = runParser aerodromeParser s
+parseAerodrome = runParser aerodromeParser
 
--- | 'Aerodrome' smart constructor: a monad that 'fail's if the given name is not
---  a valid aerodrome name.
+-- | 'Aerodrome' smart constructor. Fails if the given name is not a valid.
 mkAerodrome :: (Monad m) => String -> m Aerodrome
 mkAerodrome n
     | length n /= 4 || not (all isUpper n) =
@@ -63,14 +63,18 @@ significantPointParser = namedPointParser <|> latLongParser
 -- | Parses the given textual representation of a 'SignificantPoint'.
 -- return either an 'Error' ('Left') or the parsed 'SignificantPoint' ('Right').
 parseSignificantPoint :: String -> Either Error SignificantPoint
-parseSignificantPoint s = runParser significantPointParser s
+parseSignificantPoint = runParser significantPointParser
 
+-- | 'CodedDesignator' 'SignificantPoint' smart constructor. Fails if the given name
+-- is not a valid.
 mkCodedDesignator :: (Monad m) => String -> m SignificantPoint
 mkCodedDesignator n
     | length n < 2 || length n > 5 =
         fail ("invalid coded designator=" ++ n ++ " expected 2 to 5 [A-Z] characters")
     | otherwise = return (CodedDesignator n)
 
+-- | 'BearingDistance' 'SignificantPoint' smart constructor. Fails if the given name
+-- and/or bearing and/or distance are not a valid.
 mkBearingDistance :: (Monad m) => String -> Int -> Int -> m SignificantPoint
 mkBearingDistance n b d
     | length n < 2 || length n > 5 =
@@ -79,51 +83,40 @@ mkBearingDistance n b d
     | d < 0 = fail ("invalid distance=" ++ show d)
     | otherwise = return (BearingDistance n b d)
 
+-- | 'Position' 'SignificantPoint' smart constructor. Fails if the given latitude
+-- and/or longitude are not valid.
 mkPosition :: (Monad m) => Float -> Float -> m SignificantPoint
 mkPosition lat long
     | lat < -90.0 || lat > 90.0 = fail ("invalid latitude=" ++ show lat)
     | long < -180.0 || long > 180.0 = fail ("invalid longitude=" ++ show long)
     | otherwise = return (Position lat long)
 
--- Private functions.
 namedPointParser :: Parser SignificantPoint
 namedPointParser = do
     n <- word
     bd <- optional bearingDistanceParser
     case bd of
-        Nothing -> (mkCodedDesignator n)
-        Just (b, d) -> (mkBearingDistance n b d)
+        Nothing -> mkCodedDesignator n
+        Just (b, d) -> mkBearingDistance n b d
 
 latLongParser :: Parser SignificantPoint
-latLongParser = latLongDMParser <|> latLongDParser
+latLongParser = do
+    latDeg <- positive 2
+    latMin <- optional (positive 2)
+    h <- oneOf "NS"
+    longDeg <- positive 3
+    longMin <- optional (positive 2)
+    m <- oneOf "EW"
+    do
+        latDec <- decimal latDeg (fromMaybe 0 latMin) (north h)
+        longDec <- decimal longDeg (fromMaybe 0 longMin) (east m)
+        mkPosition latDec longDec
 
 bearingDistanceParser :: Parser (Int, Int)
 bearingDistanceParser = do
     b <- positive 3
     d <- positive 3
     return (b, d)
-
-latLongDParser :: Parser SignificantPoint
-latLongDParser = do
-    latDeg <- positive 2
-    h <- oneOf "NS"
-    longDeg <- positive 3
-    m <- oneOf "EW"
-    do latDec <- (decimal latDeg 0 (north h))
-       longDec <- (decimal longDeg 0 (east m))
-       (mkPosition latDec longDec)
-
-latLongDMParser :: Parser SignificantPoint
-latLongDMParser = do
-    latDeg <- positive 2
-    latMin <- positive 2
-    h <- oneOf "NS"
-    longDeg <- positive 3
-    longMin <- positive 2
-    m <- oneOf "EW"
-    do latDec <- (decimal latDeg latMin (north h))
-       longDec <- (decimal longDeg longMin (east m))
-       (mkPosition latDec longDec)
 
 north :: Char -> Bool
 north h = h == 'N'
@@ -137,4 +130,4 @@ decimal dd mm sign
     | sign = return dec
     | otherwise = return (-dec)
   where
-    dec = (fromIntegral dd) + (fromIntegral mm) / 60.0
+    dec = fromIntegral dd + fromIntegral mm / 60.0

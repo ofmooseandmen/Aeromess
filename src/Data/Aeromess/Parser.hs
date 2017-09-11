@@ -14,6 +14,7 @@ module Data.Aeromess.Parser
     , identifier
     , lookAhead
     , many
+    , noneOf
     , octal
     , oneOf
     , optional
@@ -23,7 +24,6 @@ module Data.Aeromess.Parser
     , some
     , space
     , string
-    , text
     , try
     , word
     , words
@@ -86,6 +86,10 @@ lookAhead = P.lookAhead
 many :: Parser a -> Parser [a]
 many = P.many
 
+-- | Dual of 'oneOf'
+noneOf :: String -> Parser Char
+noneOf = P.noneOf
+
 -- | Parses @n@ octal digits.
 octal :: Int -> Parser String
 octal n = P.count n C.octDigit
@@ -122,10 +126,6 @@ space = P.space
 -- | Parses the given string.
 string :: String -> Parser String
 string = C.string
-
--- | Parses 1 to many character(s) expect for '-', '/' and parentheses. Returns the parsed text.
-text :: Parser String
-text = some (P.noneOf("-/()"))
 
 -- | The parser @@try p@ behaves like parser @p@,
 -- except that it pretends that it hasn't consumed any input when an error occurs.

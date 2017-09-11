@@ -29,7 +29,7 @@ adesParser = do
     dash
     return ades
 
--- | Field Type 16 'Data' parse.
+-- | Field Type 16 parser.
 parser :: Parser Data
 parser = do
     ades <- aerodromeParser

@@ -40,6 +40,7 @@ hhmmParser = do
 parseHhmm :: String -> Either Error Hhmm
 parseHhmm s = runParser hhmmParser s
 
+-- | 'Hhmm' smart constructor. Fails if given hour and/or minute are not valid.
 mkHhmm :: (Monad m) => Int -> Int -> m Hhmm
 mkHhmm hh mm
     | hh < 0 || hh > 23 = fail ("invalid hour=" ++ show hh)

@@ -14,7 +14,7 @@ import Data.Aeromess.Parser
 import Data.Char
 import Data.Maybe
 
--- | Aircraft identification, a.k.a. call-sign, maximum of 7 uppercase characters.
+-- | Aircraft identification, a.k.a. call-sign, maximum of 7 uppercase/digit characters.
 newtype AircraftIdentification =
     AircraftIdentification String
     deriving (Eq, Show)
@@ -58,7 +58,7 @@ acIdParser = do
     r <- identifier
     mkAircraftIdentification r
 
--- | Field Type 7 'Data' parser.
+-- | Field Type 7 parser.
 parser :: Parser Data
 parser = do
     acId <- acIdParser
@@ -66,6 +66,8 @@ parser = do
     dash
     return (Data acId (fmap fst smc) (fmap snd smc))
 
+-- | 'AircraftIdentification' smart constructor. Fails if given identification is
+-- not valid.
 mkAircraftIdentification :: (Monad m) => String -> m AircraftIdentification
 mkAircraftIdentification s
     | null s = fail "empty aicraft identification"
@@ -79,6 +81,7 @@ validCode c
     | all isOctDigit c = True
     | otherwise = False
 
+-- | 'SsrCode' smart constructor. Fails if given code value is not valid.
 mkSsrCode :: (Monad m) => String -> m SsrCode
 mkSsrCode c
     | validCode c = return (SsrCode c)

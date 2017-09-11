@@ -28,6 +28,7 @@ library
                      , Data.Icao.F17
                      , Data.Icao.F18
                      , Data.Icao.F19
+                     , Data.Icao.FreeText
                      , Data.Icao.Switches
   build-depends:       base >= 4.7 && < 5
                      , parsec >= 3.1.11 && < 4

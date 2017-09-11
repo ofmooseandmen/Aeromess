@@ -4,6 +4,7 @@ module Data.Icao.Expected
     , mkAircraftIdentification'
     , mkBearingDistance'
     , mkCodedDesignator'
+    , mkDate'
     , mkHhmm'
     , mkPosition'
     , mkSsrCode'
@@ -32,6 +33,9 @@ mkBearingDistance' n b d = fromMaybe (error "invalid bearing/distance") (mkBeari
 
 mkCodedDesignator' :: String -> SignificantPoint
 mkCodedDesignator' n = fromMaybe (error "invalid hour/minute") (mkCodedDesignator n)
+
+mkDate' :: Int -> Int -> Int -> Date
+mkDate' y m d = fromMaybe (error "invalid year/month/day") (mkDate y m d)
 
 mkHhmm' :: Int -> Int -> Hhmm
 mkHhmm' h m = fromMaybe (error "invalid hour/minute") (mkHhmm h m)

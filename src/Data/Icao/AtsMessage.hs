@@ -7,6 +7,7 @@ module Data.Icao.AtsMessage
     ( AtsMessage(..)
     -- re-exported data types
     , Aerodrome
+    , Date(year, month, day)
     , Hhmm(hour, minute)
     , SignificantPoint(CodedDesignator, Position, BearingDistance,
                  latitude, longitude, reference, bearing, distance)
@@ -18,6 +19,7 @@ module Data.Icao.AtsMessage
     , F18.PbnCapabilityCode(..)
     -- re-exported smart constructors
     , mkAerodrome
+    , mkDate
     , mkHhmm
     , mkCodedDesignator
     , mkPosition
@@ -51,8 +53,8 @@ data AtsMessage
     -- when a controlled flight which has experienced failure of two-way communication
     -- has landed, by the aerodrome control tower at the arrival aerodrome.
     = ArrivalMessage
-         -- | aircraft identification.
-       { aircraftIndentification :: F7.AircraftIdentification
+       { -- | aircraft identification.
+         aircraftIndentification :: F7.AircraftIdentification
           -- | SSR mode.
        , ssrMode :: Maybe F7.SsrMode
           -- | SSR code.
@@ -72,8 +74,8 @@ data AtsMessage
     -- | Departure message transmitted transmitted by the ATS unit serving the
     -- departure aerodrome to all recipients of basic flight plan data.
     | DepartureMessage
-         -- | aircraft identification. 
-       { aircraftIndentification :: F7.AircraftIdentification
+       { -- | aircraft identification.
+         aircraftIndentification :: F7.AircraftIdentification
           -- | SSR mode
        , ssrMode :: Maybe F7.SsrMode
           -- | SSR code

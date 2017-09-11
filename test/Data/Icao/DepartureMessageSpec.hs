@@ -42,4 +42,13 @@ spec =
                      (mkAerodrome' "EGPD")
                      (mkHhmm' 19 23)
                      (mkAerodrome' "ENZV")
-                     (OtherInformation (Just MARSA) [A1, T1] Nothing))
+                     (OtherInformation
+                          (Just MARSA)
+                          [A1, T1]
+                          Nothing
+                          Nothing
+                          Nothing
+                          Nothing
+                          Nothing
+                          Nothing
+                          Nothing))

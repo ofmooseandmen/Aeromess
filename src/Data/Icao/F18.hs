@@ -9,7 +9,10 @@ module Data.Icao.F18
     ) where
 
 import Data.Aeromess.Parser
+import Data.Icao.FreeText
+import Data.Icao.Location
 import qualified Data.Icao.Switches as S
+import Data.Icao.Time
 import Data.Maybe
 import Prelude hiding (words)
 
@@ -73,13 +76,28 @@ data OtherInformation = OtherInformation
       -- as required by the appropriate ATS authority. Indicate GNSS augmentation
       -- under this indicator, with a space between two or more methods of
       -- augmentation, e.g. NAV/GBAS SBAS.
-    , navigationEquipments :: Maybe String
+    , navigationEquipments :: Maybe FreeText
+      -- | Indicate communication equipment and capabilities not specified in Item 10 a).
+    , communicationEquipments :: Maybe FreeText
+      -- | Indicate data communication equipment and capabilities not specified in 10 a).
+    , dataCommunicationEquipments :: Maybe FreeText
+      -- | Indicate surveillance equipment and capabilities not specified in Item 10 b).
+      -- Indicate as many RSP specification(s) as apply to the flight, using designator(s) with no space.
+      -- Multiple RSP specifications are separated by a space. Example: RSP180 RSP400.
+    , surveillanceEquipments :: Maybe FreeText
+      -- | Name and location of departure aerodrome, if ZZZZ is inserted in Item 13, or the ATS unit from
+      -- which supplementary flight plan data can be obtained, if AFIL is inserted in Item 13.
+    , departure :: Maybe SignificantPoint
+    -- | Name and location of destination aerodrome, if ZZZZ is inserted in Item 16.
+    , destination :: Maybe SignificantPoint
+    -- | The date of flight departure in a six-figure format.
+    , dof :: Maybe Date
     } deriving (Show, Eq)
 
 data Data
     = Sts SpecicalHandlingReason
     | Pbn [PbnCapabilityCode]
-    | Nav String
+    | Nav FreeText
 
 data SwitchKey
     = PBN
@@ -89,7 +107,8 @@ data SwitchKey
 
 -- | Returns empty 'OtherInformation'.
 emptyOtherInformation :: OtherInformation
-emptyOtherInformation = OtherInformation Nothing [] Nothing
+emptyOtherInformation =
+    OtherInformation Nothing [] Nothing Nothing Nothing Nothing Nothing Nothing Nothing
 
 otherInfoFiller :: Data -> OtherInformation -> OtherInformation
 otherInfoFiller (Sts x) o = o {specicalHandlingReason = Just x}
@@ -110,7 +129,7 @@ switchParser =
     optional
         (S.parser STS stsParser Sts <|>
          S.parser PBN pbnParser Pbn <|>
-         S.parser NAV words Nav)
+         S.parser NAV freeTextParser Nav)
 
 -- | Field Type 18 parser.
 parser :: Parser OtherInformation

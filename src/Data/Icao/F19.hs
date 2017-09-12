@@ -1,24 +1,31 @@
 -- |
 -- ICAO Field Type 19 - Supplementary information.
+-- This field is a collection of switches all optional, use the withXXXX function to
+-- build a new instance starting from 'emptySupplementaryInformation'.
 module Data.Icao.F19
-    ( Dinghies(number, totalCapacity, covered, colour)
+    ( Dinghies(..)
     , Transmitter(..)
     , SurvivalEquipment(..)
     , LifeJacket(..)
     , SupplementaryInformation(..)
-    , emptyDinghies
-    , emptySupplementaryInformation
-    , dinghiesWithNumber
-    , dinghiesWithCapacity
-    , dinghiesWithCover
-    , dinghiesWithColour
     , parser
+    -- | 'SupplementaryInformation' builder functions
+    , emptySupplementaryInformation
+    , withFuelEndurance
+    , withPersonsOnBoard
+    , witAvailableTransmitters
+    , withSurvivalEquipments
+    , withLifeJackets
+    , withDinghies
+    , withAircraftDescription
+    , withOtherRemarks
+    , withPilotInCommand
     ) where
 
 import Data.Aeromess.Parser
 import Data.Char
 import Data.Either
-import Data.Icao.FreeText
+import Data.Icao.Lang
 import qualified Data.Icao.Switches as S
 import Data.Icao.Time
 import Data.List hiding (words)
@@ -50,28 +57,28 @@ data LifeJacket
 
 -- | Dinghies
 data Dinghies = Dinghies
-    { number :: Maybe Int -- ^ the number of dinghies carried.
-    , totalCapacity :: Maybe Int -- ^  the total capacity, in persons carried, of all dinghies.
+    { number :: Maybe Natural2 -- ^ the number of dinghies carried.
+    , totalCapacity :: Maybe Natural3 -- ^  the total capacity, in persons carried, of all dinghies.
     , covered :: Bool -- ^ whether dinghies are covered.
-    , colour :: Maybe String -- ^ the colour of the dinghies.
+    , colour :: Maybe FreeText -- ^ the colour of the dinghies.
     } deriving (Eq, Show)
 
 -- | Supplementary information data.
 data SupplementaryInformation = SupplementaryInformation
     { fuelEndurance :: Maybe Hhmm -- ^ the fuel endurance in hours and minutes
-    , personsOnBoard :: Maybe Int -- ^ the total number of persons on board, when so prescribed by the appropriate ATS authority
+    , personsOnBoard :: Maybe Natural3 -- ^ the total number of persons on board, when so prescribed by the appropriate ATS authority
     , availableTransmitters :: [Transmitter] -- ^ special transmitter(s)
     , survivalEquipments :: [SurvivalEquipment] -- ^ survival equipment(s) carried on board
     , lifeJackets :: [LifeJacket] -- ^ type of life jackets carried on board
     , dinghies :: Dinghies -- ^ description of the dinghies caried on board
     , aircraftDescription :: Maybe FreeText -- ^ the colour of the aircraft and any Significant markings (this may include the aircraft registration)
-    , remarks :: Maybe FreeText -- ^ plain language indicating any other survival equipment carried and any other useful remarks
+    , otherRemarks :: Maybe FreeText -- ^ plain language indicating any other survival equipment carried and any other useful remarks
     , pilotInCommand :: Maybe FreeText -- ^ the name of the pilot-in-command and possibly the contact phone
     } deriving (Eq, Show)
 
 data Data
     = Fe Hhmm
-    | Pob Int
+    | Pob Natural3
     | At [Transmitter]
     | Se [SurvivalEquipment]
     | Lj [LifeJacket]
@@ -92,38 +99,47 @@ data SwitchKey
     | C
     deriving (Bounded, Enum, Eq, Read, Show)
 
--- | Returns empty 'Dinghies'.
-emptyDinghies :: Dinghies
-emptyDinghies = Dinghies Nothing Nothing False Nothing
-
--- | Sets the number of dinghies. Fails if given number is not in
--- range [0 .. 99].
-dinghiesWithNumber :: (Monad m) => Int -> Dinghies -> m Dinghies
-dinghiesWithNumber n d
-    | n < 0 || n > 99 = fail ("invalid number of dinghies=" ++ show n)
-    | otherwise = return (d {number = Just n})
-
--- | Sets the total capacity of the dinghies. Fails if given number is not in
--- range [0 .. 999].
-dinghiesWithCapacity :: (Monad m) => Int -> Dinghies -> m Dinghies
-dinghiesWithCapacity c d
-    | c < 0 || c > 999 = fail ("invalid total capacity=" ++ show c)
-    | otherwise = return (d {totalCapacity = Just c})
-
--- | Sets whether the dinghies are covered.
-dinghiesWithCover :: (Monad m) => Bool -> Dinghies -> m Dinghies
-dinghiesWithCover c d = return (d {covered = c})
-
--- | Sets the colour of the dinghies. Fails if given colour is not a plain word.
-dinghiesWithColour :: (Monad m) => String -> Dinghies -> m Dinghies
-dinghiesWithColour c d
-    | not (all isUpper c) = fail ("invalid dinghies colour=" ++ c)
-    | otherwise = return (d {colour = Just c})
-
 -- | Returns empty 'SupplementaryInformation'.
 emptySupplementaryInformation :: SupplementaryInformation
 emptySupplementaryInformation =
-    SupplementaryInformation Nothing Nothing [] [] [] emptyDinghies Nothing Nothing Nothing
+    SupplementaryInformation Nothing Nothing [] [] [] (Dinghies Nothing Nothing False Nothing) Nothing Nothing Nothing
+
+-- | Sets the aircraft fuel endurance in hours and minutes.
+withFuelEndurance :: Hhmm -> SupplementaryInformation -> SupplementaryInformation
+withFuelEndurance fe si = si {fuelEndurance = Just fe}
+
+-- | Sets the number of persons on board the aircraft.
+withPersonsOnBoard :: Natural3 -> SupplementaryInformation -> SupplementaryInformation
+withPersonsOnBoard n si = si {personsOnBoard = Just n}
+
+-- | Sets the available transmitters on board the aircraft.
+witAvailableTransmitters :: [Transmitter] -> SupplementaryInformation -> SupplementaryInformation
+witAvailableTransmitters t si = si {availableTransmitters = t}
+
+-- | Sets the available survival equipements on board the aircraft.
+withSurvivalEquipments ::
+       [SurvivalEquipment] -> SupplementaryInformation -> SupplementaryInformation
+withSurvivalEquipments s si = si {survivalEquipments = s}
+
+-- | Sets the aircraft description.
+withAircraftDescription :: FreeText -> SupplementaryInformation -> SupplementaryInformation
+withAircraftDescription d si = si {aircraftDescription = Just d}
+
+-- | Sets the detail of the pilot in command.
+withPilotInCommand :: FreeText -> SupplementaryInformation -> SupplementaryInformation
+withPilotInCommand p si = si {pilotInCommand = Just p}
+
+-- | Sets the dinghies.
+withDinghies :: Dinghies -> SupplementaryInformation -> SupplementaryInformation
+withDinghies d si = si {dinghies = d}
+
+-- | Sets the details of the life jackets available on board the aircraft.
+withLifeJackets :: [LifeJacket] -> SupplementaryInformation -> SupplementaryInformation
+withLifeJackets l si = si {lifeJackets = l}
+
+-- | Sets the othe remarks.
+withOtherRemarks :: FreeText -> SupplementaryInformation -> SupplementaryInformation
+withOtherRemarks r si = si {pilotInCommand = Just r}
 
 suppInfoFiller :: Data -> SupplementaryInformation -> SupplementaryInformation
 suppInfoFiller (Fe x) o = o {fuelEndurance = Just x}
@@ -133,14 +149,11 @@ suppInfoFiller (Se x) o = o {survivalEquipments = x}
 suppInfoFiller (Lj x) o = o {lifeJackets = x}
 suppInfoFiller (Di x) o = o {dinghies = x}
 suppInfoFiller (Ad x) o = o {aircraftDescription = Just x}
-suppInfoFiller (Rmk x) o = o {remarks = Just x}
+suppInfoFiller (Rmk x) o = o {otherRemarks = Just x}
 suppInfoFiller (Pn x) o = o {pilotInCommand = Just x}
 
 mkSuppInformation :: [Data] -> SupplementaryInformation
 mkSuppInformation = foldl (flip suppInfoFiller) emptySupplementaryInformation
-
-pobParser :: Parser Int
-pobParser = positive 1 <|> positive 2 <|> positive 3
 
 transmitterParser :: Parser Transmitter
 transmitterParser = do
@@ -196,21 +209,21 @@ ljParser = do
 -- The colour of the dinghies (e.g. RED).
 deParser :: Parser Dinghies
 deParser = do
-    nb <- optional (positive 2 <* space)
-    capa <- optional (positive 3 <* space)
+    nb <- optional (natural2Parser <* space)
+    capa <- optional (natural3Parser <* space)
     cov <- optional (char 'C' <* space)
-    col <- optional word
+    col <- optional freeTextParser
     return (Dinghies nb capa (isJust cov) col)
 
 switchParser :: Parser (Maybe Data)
 switchParser =
-    S.parser E hhmmParser Fe      <|>
-    S.parser P pobParser Pob      <|>
-    S.parser R atParser At        <|>
-    S.parser S seParser Se        <|>
-    S.parser J ljParser Lj        <|>
-    S.parser D deParser Di        <|>
-    S.parser A freeTextParser Ad  <|>
+    S.parser E hhmmParser Fe <|>
+    S.parser P natural3Parser Pob <|>
+    S.parser R atParser At <|>
+    S.parser S seParser Se <|>
+    S.parser J ljParser Lj <|>
+    S.parser D deParser Di <|>
+    S.parser A freeTextParser Ad <|>
     S.parser N freeTextParser Rmk <|>
     S.parser C freeTextParser Pn
 

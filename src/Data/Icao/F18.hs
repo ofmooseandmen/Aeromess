@@ -1,15 +1,27 @@
 -- |
 -- ICAO Field Type 18 - Other information.
+-- This field is a collection of switches all optional, use the withXXXX function to
+-- build a new instance starting from 'emptyOtherInformation'.
 module Data.Icao.F18
     ( OtherInformation(..)
     , PbnCapabilityCode(..)
     , SpecicalHandlingReason(..)
     , parser
+    -- | 'OtherInformation' builder functions
     , emptyOtherInformation
+    , withSpecialHandlingReason
+    , withPbnCapabilities
+    , withNavigationEquipments
+    , withCommunicationEquipments
+    , withDataCommunicationEquipments
+    , withSurveillanceEquipments
+    , withDeparture
+    , withDestination
+    , withDof
     ) where
 
 import Data.Aeromess.Parser
-import Data.Icao.FreeText
+import Data.Icao.Lang
 import Data.Icao.Location
 import qualified Data.Icao.Switches as S
 import Data.Icao.Time
@@ -68,30 +80,21 @@ data SpecicalHandlingReason
 
 -- | Other information.
 data OtherInformation = OtherInformation
-    { -- | Reason for special handling by ATS, e.g. a search and rescue mission.
-      specicalHandlingReason :: Maybe SpecicalHandlingReason
-      -- | RNAV and RNP capabilites.
-    , pbnCapabilities :: [PbnCapabilityCode]
-      -- | Significant data related to navigation equipment, other than specified in PBN/,
-      -- as required by the appropriate ATS authority. Indicate GNSS augmentation
-      -- under this indicator, with a space between two or more methods of
-      -- augmentation, e.g. NAV/GBAS SBAS.
-    , navigationEquipments :: Maybe FreeText
-      -- | Indicate communication equipment and capabilities not specified in Item 10 a).
-    , communicationEquipments :: Maybe FreeText
-      -- | Indicate data communication equipment and capabilities not specified in 10 a).
-    , dataCommunicationEquipments :: Maybe FreeText
-      -- | Indicate surveillance equipment and capabilities not specified in Item 10 b).
-      -- Indicate as many RSP specification(s) as apply to the flight, using designator(s) with no space.
-      -- Multiple RSP specifications are separated by a space. Example: RSP180 RSP400.
-    , surveillanceEquipments :: Maybe FreeText
-      -- | Name and location of departure aerodrome, if ZZZZ is inserted in Item 13, or the ATS unit from
-      -- which supplementary flight plan data can be obtained, if AFIL is inserted in Item 13.
-    , departure :: Maybe SignificantPoint
-    -- | Name and location of destination aerodrome, if ZZZZ is inserted in Item 16.
-    , destination :: Maybe SignificantPoint
-    -- | The date of flight departure in a six-figure format.
-    , dof :: Maybe Date
+    { specicalHandlingReason :: Maybe SpecicalHandlingReason -- ^ Reason for special handling by ATS, e.g. a search and rescue mission.
+    , pbnCapabilities :: [PbnCapabilityCode] -- ^ RNAV and RNP capabilites.
+    , navigationEquipments :: Maybe FreeText -- ^ Significant data related to navigation equipment, other than specified in PBN/,
+                                             -- as required by the appropriate ATS authority. Indicate GNSS augmentation
+                                             -- under this indicator, with a space between two or more methods of
+                                             -- augmentation, e.g. NAV/GBAS SBAS.
+    , communicationEquipments :: Maybe FreeText -- ^ Indicate communication equipment and capabilities not specified in Item 10 a).
+    , dataCommunicationEquipments :: Maybe FreeText -- ^ Indicate data communication equipment and capabilities not specified in 10 a).
+    , surveillanceEquipments :: Maybe FreeText -- ^ Indicate surveillance equipment and capabilities not specified in Item 10 b).
+                                               -- Indicate as many RSP specification(s) as apply to the flight, using designator(s) with no space.
+                                               -- Multiple RSP specifications are separated by a space. Example: RSP180 RSP400.
+    , departure :: Maybe SignificantPoint -- ^ Name and location of departure aerodrome, if ZZZZ is inserted in Item 13, or the ATS unit from
+                                          -- which supplementary flight plan data can be obtained, if AFIL is inserted in Item 13.
+    , destination :: Maybe SignificantPoint -- ^ Name and location of destination aerodrome, if ZZZZ is inserted in Item 16.
+    , dof :: Maybe Date -- ^ The date of flight departure in a six-figure format.
     } deriving (Show, Eq)
 
 data Data
@@ -122,6 +125,33 @@ emptyOtherInformation :: OtherInformation
 emptyOtherInformation =
     OtherInformation Nothing [] Nothing Nothing Nothing Nothing Nothing Nothing Nothing
 
+withSpecialHandlingReason :: SpecicalHandlingReason -> OtherInformation -> OtherInformation
+withSpecialHandlingReason s oi = oi {specicalHandlingReason = Just s}
+
+withPbnCapabilities :: [PbnCapabilityCode] -> OtherInformation -> OtherInformation
+withPbnCapabilities p oi = oi {pbnCapabilities = p}
+
+withNavigationEquipments :: FreeText -> OtherInformation -> OtherInformation
+withNavigationEquipments n oi = oi {navigationEquipments = Just n}
+
+withCommunicationEquipments :: FreeText -> OtherInformation -> OtherInformation
+withCommunicationEquipments c oi = oi {navigationEquipments = Just c}
+
+withDataCommunicationEquipments :: FreeText -> OtherInformation -> OtherInformation
+withDataCommunicationEquipments d oi = oi {navigationEquipments = Just d}
+
+withSurveillanceEquipments :: FreeText -> OtherInformation -> OtherInformation
+withSurveillanceEquipments s oi = oi {navigationEquipments = Just s}
+
+withDeparture :: SignificantPoint -> OtherInformation -> OtherInformation
+withDeparture d oi = oi {departure = Just d}
+
+withDestination :: SignificantPoint -> OtherInformation -> OtherInformation
+withDestination d oi = oi {destination = Just d}
+
+withDof :: Date -> OtherInformation -> OtherInformation
+withDof d oi = oi {dof = Just d}
+
 otherInfoFiller :: Data -> OtherInformation -> OtherInformation
 otherInfoFiller (Sts x) o = o {specicalHandlingReason = Just x}
 otherInfoFiller (Pbn x) o = o {pbnCapabilities = x}
@@ -144,9 +174,7 @@ stsParser = enumeration :: Parser SpecicalHandlingReason
 
 switchParser :: Parser (Maybe Data)
 switchParser =
-    S.parser STS stsParser Sts <|>
-    S.parser PBN pbnParser Pbn <|>
-    S.parser NAV freeTextParser Nav <|>
+    S.parser STS stsParser Sts <|> S.parser PBN pbnParser Pbn <|> S.parser NAV freeTextParser Nav <|>
     S.parser COM freeTextParser Com <|>
     S.parser DAT freeTextParser Dat <|>
     S.parser SUR freeTextParser Sur <|>
@@ -158,10 +186,9 @@ switchParser =
 parser :: Parser OtherInformation
 parser = do
     empty <- optional (char '0')
-    if isJust empty then
-        return emptyOtherInformation
-    else
-        do
+    if isJust empty
+        then return emptyOtherInformation
+        else do
             s <- some switchParser
             optional dash
             return (mkOtherInformation (catMaybes s))

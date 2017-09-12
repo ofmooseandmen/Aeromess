@@ -18,7 +18,7 @@ module Data.Aeromess.Parser
     , octal
     , oneOf
     , optional
-    , positive
+    , natural
     , runParser
     , slash
     , some
@@ -107,9 +107,9 @@ optional = P.optionMaybe
 runParser :: Parser a -> String -> Either Error a
 runParser p s = mapLeft err (P.parse p "" s)
 
--- | Parses a positive number of n digits. Returns the parsed number
-positive :: Int -> Parser Int
-positive n = fmap read (P.count n P.digit)
+-- | Parses a natural number (non-negative integer) of n digits. Returns the parsed number
+natural :: Int -> Parser Int
+natural n = fmap read (P.count n P.digit)
 
 -- | Parses a '/' character
 slash :: Parser Char

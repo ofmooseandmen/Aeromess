@@ -101,11 +101,11 @@ namedPointParser = do
 
 latLongParser :: Parser SignificantPoint
 latLongParser = do
-    latDeg <- positive 2
-    latMin <- optional (positive 2)
+    latDeg <- natural 2
+    latMin <- optional (natural 2)
     h <- oneOf "NS"
-    longDeg <- positive 3
-    longMin <- optional (positive 2)
+    longDeg <- natural 3
+    longMin <- optional (natural 2)
     m <- oneOf "EW"
     do
         latDec <- decimal latDeg (fromMaybe 0 latMin) (north h)
@@ -114,8 +114,8 @@ latLongParser = do
 
 bearingDistanceParser :: Parser (Int, Int)
 bearingDistanceParser = do
-    b <- positive 3
-    d <- positive 3
+    b <- natural 3
+    d <- natural 3
     return (b, d)
 
 north :: Char -> Bool

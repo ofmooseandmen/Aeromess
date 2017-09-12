@@ -1,8 +1,14 @@
 name:                Aeromess
 version:             0.1.0.0
-synopsis:            Aeronautical Messages parser and formatter
+synopsis:            Aeronautical Messages parsers and formatters
 description:
-  ICAO 4444 (edition 2016) ATS message parser and formatter
+  Aeromess provides parsers and formatters for a variety of
+  aernautical messages.
+
+  - ICAO 4444 (edition 2016)
+  - PAN AIDC
+  - Eurocontrol OLDI 4.2
+  - Eurocontrol IFPS
 
 homepage:            https://github.com/ofmooseandmen/Aeromess#readme
 license:             BSD3
@@ -28,7 +34,7 @@ library
                      , Data.Icao.F17
                      , Data.Icao.F18
                      , Data.Icao.F19
-                     , Data.Icao.FreeText
+                     , Data.Icao.Lang
                      , Data.Icao.Switches
   build-depends:       base >= 4.7 && < 5
                      , parsec >= 3.1.11 && < 4

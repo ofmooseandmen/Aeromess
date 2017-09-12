@@ -8,6 +8,9 @@ module Data.Icao.AtsMessage
     -- re-exported data types
     , Aerodrome
     , Date(year, month, day)
+    , FreeText
+    , Natural2
+    , Natural3
     , Hhmm(hour, minute)
     , SignificantPoint(CodedDesignator, Position, BearingDistance,
                  latitude, longitude, reference, bearing, distance)
@@ -20,6 +23,9 @@ module Data.Icao.AtsMessage
     -- re-exported smart constructors
     , mkAerodrome
     , mkDate
+    , mkFreeText
+    , mkNatural2
+    , mkNatural3
     , mkHhmm
     , mkCodedDesignator
     , mkPosition
@@ -41,6 +47,7 @@ import qualified Data.Icao.F17 as F17
 import qualified Data.Icao.F18 as F18
 import qualified Data.Icao.F3 as F3
 import qualified Data.Icao.F7 as F7
+import Data.Icao.Lang
 import Data.Icao.Location
 import Data.Icao.Time
 import Data.Maybe
@@ -52,42 +59,26 @@ data AtsMessage
     -- or
     -- when a controlled flight which has experienced failure of two-way communication
     -- has landed, by the aerodrome control tower at the arrival aerodrome.
-    = ArrivalMessage
-       { -- | aircraft identification.
-         aircraftIndentification :: F7.AircraftIdentification
-          -- | SSR mode.
-       , ssrMode :: Maybe F7.SsrMode
-          -- | SSR code.
-       , ssrCode :: Maybe F7.SsrCode
-          -- | aerodrome of departure.
-       , adep :: Aerodrome
-          -- | estimated off-block time.
-       , eobt :: Hhmm
-          -- | aerodrome of arrival, only in case of a diversionary landing.
-       , originalAdes :: Maybe Aerodrome
-          -- | actual aerodrome of arrival
-       , adar :: Aerodrome
-          -- | actual time of arrival.
-       , ata :: Hhmm
-          -- | name of arrival aerodrome, if 'adar' is 'ZZZZ'.
-       , adarName :: Maybe String }
+    = ArrivalMessage { aircraftIndentification :: F7.AircraftIdentification -- ^ aircraft identification.
+                     , ssrMode :: Maybe F7.SsrMode -- ^ SSR mode.
+                     , ssrCode :: Maybe F7.SsrCode -- ^ SSR code.
+                     , adep :: Aerodrome -- ^ aerodrome of departure.
+                     , eobt :: Hhmm -- ^ estimated off-block time.
+                     , originalAdes :: Maybe Aerodrome -- ^ aerodrome of arrival, only in case of a diversionary landing.
+                     , adar :: Aerodrome -- ^actual aerodrome of arrival
+                     , ata :: Hhmm -- ^ actual time of arrival.
+                     , adarName :: Maybe String -- ^ name of arrival aerodrome, if 'adar' is 'ZZZZ'.
+                      }
     -- | Departure message transmitted transmitted by the ATS unit serving the
     -- departure aerodrome to all recipients of basic flight plan data.
-    | DepartureMessage
-       { -- | aircraft identification.
-         aircraftIndentification :: F7.AircraftIdentification
-          -- | SSR mode
-       , ssrMode :: Maybe F7.SsrMode
-          -- | SSR code
-       , ssrCode :: Maybe F7.SsrCode
-          -- | aerodrome of departure.
-       , adep :: Aerodrome
-          -- | actual time of departure.
-       , atd :: Hhmm
-          -- | aerodrome of arrival.
-       , ades :: Aerodrome
-          -- | other information.
-       , otherInformation :: F18.OtherInformation }
+    | DepartureMessage { aircraftIndentification :: F7.AircraftIdentification -- ^ aircraft identification.
+                       , ssrMode :: Maybe F7.SsrMode -- ^ SSR mode.
+                       , ssrCode :: Maybe F7.SsrCode -- ^ SSR code.
+                       , adep :: Aerodrome -- ^ aerodrome of departure.
+                       , atd :: Hhmm -- ^ actual time of departure.
+                       , ades :: Aerodrome -- ^ aerodrome of arrival.
+                       , otherInformation :: F18.OtherInformation -- ^ other information.
+                        }
     deriving (Eq, Show)
 
 -- | PARSERS.

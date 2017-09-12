@@ -33,16 +33,16 @@ data Date = Date
 -- | 'Hhmm' parser.
 hhmmParser :: Parser Hhmm
 hhmmParser = do
-    hh <- positive 2
-    mm <- positive 2
+    hh <- natural 2
+    mm <- natural 2
     mkHhmm hh mm
 
 -- | 'Date' parser.
 dateParser :: Parser Date
 dateParser = do
-    yy <- positive 2
-    mm <- positive 2
-    dd <- positive 2
+    yy <- natural 2
+    mm <- natural 2
+    dd <- natural 2
     mkDate yy mm dd
 
 -- | Parses the given textual representation of a 'Hhmm'.

@@ -5,34 +5,19 @@
 -- TODO: better documentation here and also in each FXX indicate if it can be a terminal field
 module Data.Icao.AtsMessage
     ( AtsMessage(..)
-    -- re-exported data types
-    , Aerodrome
-    , Date(year, month, day)
-    , FreeText
-    , Natural2
-    , Natural3
-    , Hhmm(hour, minute)
-    , SignificantPoint(CodedDesignator, Position, BearingDistance,
-                 latitude, longitude, reference, bearing, distance)
+    -- re-exported modules
+    , module Data.Icao.Lang
+    , module Data.Icao.Location
+    , module Data.Icao.OtherInformation
+    , module Data.Icao.SupplementaryInformation
+    , module Data.Icao.Time
+    -- re-exported data
     , F7.AircraftIdentification
     , F7.SsrCode
     , F7.SsrMode(..)
-    , F18.OtherInformation(..)
-    , F18.SpecicalHandlingReason(..)
-    , F18.PbnCapabilityCode(..)
     -- re-exported smart constructors
-    , mkAerodrome
-    , mkDate
-    , mkFreeText
-    , mkNatural2
-    , mkNatural3
-    , mkHhmm
-    , mkCodedDesignator
-    , mkPosition
-    , mkBearingDistance
     , F7.mkAircraftIdentification
     , F7.mkSsrCode
-    , F18.emptyOtherInformation
     -- re-exported Parser
     , Parser
     , Error(message, column)
@@ -49,8 +34,10 @@ import qualified Data.Icao.F3 as F3
 import qualified Data.Icao.F7 as F7
 import Data.Icao.Lang
 import Data.Icao.Location
+import Data.Icao.OtherInformation
+import Data.Icao.SupplementaryInformation
 import Data.Icao.Time
-import Data.Maybe
+import Data.Maybe()
 
 -- | An ICAO 4444 ATS message.
 data AtsMessage
@@ -77,7 +64,7 @@ data AtsMessage
                        , adep :: Aerodrome -- ^ aerodrome of departure.
                        , atd :: Hhmm -- ^ actual time of departure.
                        , ades :: Aerodrome -- ^ aerodrome of arrival.
-                       , otherInformation :: F18.OtherInformation -- ^ other information.
+                       , otherInformation :: OtherInformation -- ^ other information.
                         }
     deriving (Eq, Show)
 
@@ -106,7 +93,7 @@ depParser :: Parser AtsMessage
 depParser = do
     f7 <- F7.parser
     f13 <- F13.parser
-    ades <- F16.adesParser
+    f16Ades <- F16.adesParser
     f18 <- F18.parser
     return
         (DepartureMessage
@@ -115,7 +102,7 @@ depParser = do
              (F7.ssrCode f7)
              (F13.adep f13)
              (F13.time f13)
-             ades
+             f16Ades
              f18)
 
 -- | ATS message content parser - i.e. everything between '(' and ')'
@@ -125,6 +112,7 @@ contentParser = do
     case f3 of
         "ARR" -> arrParser
         "DEP" -> depParser
+        _     -> unexpected ("unexpected message=" ++ show f3)
 
 -- | 'AtsMessage' parser.
 parser :: Parser AtsMessage
@@ -133,4 +121,4 @@ parser = betweenParentheses contentParser
 -- | Parses the given textual representation of an 'AtsMessage'.
 -- return either an 'Error' ('Left') or the parsed 'AtsMessage' ('Right').
 parse :: String -> Either Error AtsMessage
-parse s = runParser parser s
+parse = runParser parser

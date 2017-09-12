@@ -10,7 +10,7 @@ module Data.Icao.Expected
     , mkSsrCode'
     ) where
 
-import Data.Either
+import Data.Either()
 import Data.Icao.AtsMessage
 import Data.Maybe
 

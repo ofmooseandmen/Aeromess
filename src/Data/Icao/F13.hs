@@ -19,14 +19,14 @@ data Data = Data
 -- | Field Type 13 parser.
 parser :: Parser Data
 parser = do
-    adep <- aerodromeParser
-    time <- hhmmParser
-    dash
-    return (Data adep time)
+    a <- aerodromeParser
+    t <- hhmmParser
+    _ <- dash
+    return (Data a t)
 
 -- | ADEP parser.
 adepParser :: Parser Aerodrome
 adepParser = do
-    adep <- aerodromeParser
-    dash
-    return adep
+    a <- aerodromeParser
+    _ <- dash
+    return a

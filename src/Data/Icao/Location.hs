@@ -18,7 +18,7 @@ module Data.Icao.Location
 import Data.Aeromess.Parser
 import Data.Maybe
 import Data.Char
-import Data.Either
+import Data.Either()
 
 -- | the name of an aerodrome, 4 uppercase characters.
 newtype Aerodrome =

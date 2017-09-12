@@ -25,16 +25,16 @@ altn = optional (space >> aerodromeParser)
 -- | ADES parser.
 adesParser :: Parser Aerodrome
 adesParser = do
-    ades <- aerodromeParser
-    dash
-    return ades
+    a <- aerodromeParser
+    _ <- dash
+    return a
 
 -- | Field Type 16 parser.
 parser :: Parser Data
 parser = do
-    ades <- aerodromeParser
+    a <- aerodromeParser
     tett <- hhmmParser
-    altn1 <- altn
-    altn2 <- altn
-    dash
-    return (Data ades tett altn1 altn2)
+    a1 <- altn
+    a2 <- altn
+    _ <- dash
+    return (Data a tett a1 a2)

@@ -15,7 +15,7 @@ parser k p f = do
     if not (null pk) then
         do
             r <- p
-            eos show (bounds :: [a])
+            _ <- eos show (bounds :: [a])
             return (Just (f r))
     else
         return Nothing

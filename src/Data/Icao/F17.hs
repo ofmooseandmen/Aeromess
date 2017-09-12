@@ -21,7 +21,7 @@ data Data = Data
 -- | Field Type 17 parser.
 parser :: Parser Data
 parser = do
-    adar <- aerodromeParser
-    ata <- hhmmParser
-    adarName <- optional (space >> words)
-    return (Data adar ata adarName)
+    a <- aerodromeParser
+    t <- hhmmParser
+    n <- optional (space >> words)
+    return (Data a t n)

@@ -11,5 +11,5 @@ import Data.Aeromess.Parser
 parser :: Parser String
 parser = do
     t <- word
-    dash
+    _ <- dash
     return t

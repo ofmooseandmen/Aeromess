@@ -2,7 +2,7 @@ module Data.Icao.LocationSpec
     ( spec
     ) where
 
-import Data.Either
+import Data.Either()
 import Data.Icao.Expected
 import Data.Icao.Location
 import Test.Hspec

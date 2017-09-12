@@ -2,7 +2,7 @@ module Data.Icao.TimeSpec
     ( spec
     ) where
 
-import Data.Either
+import Data.Either()
 import Data.Icao.Expected
 import Data.Icao.Time
 import Test.Hspec

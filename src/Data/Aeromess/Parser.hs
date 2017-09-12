@@ -25,6 +25,7 @@ module Data.Aeromess.Parser
     , space
     , string
     , try
+    , unexpected
     , word
     , words
     ) where
@@ -132,6 +133,10 @@ string = C.string
 try :: Parser a -> Parser a
 try = P.try
 
+-- |  The parser @@unexpected msg@ always fails with an unexpected error message msg without consuming any input.
+unexpected :: String -> Parser a
+unexpected = P.unexpected
+
 -- | Parses 1 to many uppercase character(s). Returns the parsed word.
 word :: Parser String
 word = some P.upper
@@ -149,7 +154,7 @@ errMessage e = E.messageString (head (E.errorMessages e))
 
 mapLeft :: (a -> c) -> Either a b -> Either c b
 mapLeft f (Left x) = Left (f x)
-mapLeft f (Right x) = Right x
+mapLeft _ (Right x) = Right x
 
 col :: E.ParseError -> Int
 col e = read (show (P.sourceColumn (P.errorPos e)))

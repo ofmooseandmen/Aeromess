@@ -4,8 +4,6 @@
 module Data.Icao.Time
     ( Hhmm(hour, minute)
     , Date(year, month, day)
-    , Parser
-    , Error(message, column)
     , hhmmParser
     , dateParser
     , mkHhmm
@@ -15,7 +13,7 @@ module Data.Icao.Time
     ) where
 
 import Data.Aeromess.Parser
-import Data.Either
+import Data.Either()
 
 -- |'Hhmm' represents a time or duration expressed with hours and minutes only.
 data Hhmm = Hhmm
@@ -63,6 +61,7 @@ mkHhmm hh mm
     | otherwise = return (Hhmm hh mm)
 
 -- | 'Date' smart constructor. Fails if given year and/or month and/or day are not valid.
+mkDate :: (Monad m) => Int -> Int -> Int -> m Date
 mkDate yy mm dd
     | yy < 0 || yy > 99 = fail ("invalid year=" ++ show yy)
     | mm < 1 || mm > 12 = fail ("invalid month=" ++ show mm)

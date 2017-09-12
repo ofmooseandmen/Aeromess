@@ -12,7 +12,7 @@ module Data.Icao.F7
 
 import Data.Aeromess.Parser
 import Data.Char
-import Data.Maybe
+import Data.Maybe()
 
 -- | Aircraft identification, a.k.a. call-sign, maximum of 7 uppercase/digit characters.
 newtype AircraftIdentification =
@@ -63,7 +63,7 @@ parser :: Parser Data
 parser = do
     acId <- acIdParser
     smc <- smcParser
-    dash
+    _ <- dash
     return (Data acId (fmap fst smc) (fmap snd smc))
 
 -- | 'AircraftIdentification' smart constructor. Fails if given identification is

@@ -2,7 +2,7 @@ module Data.Icao.DepartureMessageSpec
     ( spec
     ) where
 
-import Data.Either
+import Data.Either()
 import Data.Icao.AtsMessage
 import Data.Icao.Expected
 import Test.Hspec
@@ -42,16 +42,7 @@ spec =
                      (mkAerodrome' "EGPD")
                      (mkHhmm' 19 23)
                      (mkAerodrome' "ENZV")
-                     (OtherInformation
-                          (Just MARSA)
-                          [A1, T1]
-                          Nothing
-                          Nothing
-                          Nothing
-                          Nothing
-                          Nothing
-                          Nothing
-                          Nothing))
+                     (withSpecialHandlingReason MARSA . withPbnCapabilities [A1, T1] $ emptyOtherInformation))
         it "parses a DEP message containing a F18 with DEST and DOF" $
             parse "(DEP-CSA4311-EGPD1923-ZZZZ-DEST/ESMS DOF/870601)" `shouldBe`
             Right
@@ -62,13 +53,4 @@ spec =
                        (mkAerodrome' "EGPD")
                        (mkHhmm' 19 23)
                        (mkAerodrome' "ZZZZ")
-                       (OtherInformation
-                            Nothing
-                            []
-                            Nothing
-                            Nothing
-                            Nothing
-                            Nothing
-                            Nothing
-                            (Just (mkCodedDesignator' "ESMS"))
-                            (Just (mkDate' 87 6 1))))
+                       (withDestination (mkCodedDesignator' "ESMS") . withDof (mkDate' 87 6 1) $ emptyOtherInformation))

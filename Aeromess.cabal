@@ -5,10 +5,8 @@ description:
   Aeromess provides parsers and formatters for a variety of
   aernautical messages.
 
-  - ICAO 4444 (edition 2016)
-  - PAN AIDC
-  - Eurocontrol OLDI 4.2
-  - Eurocontrol IFPS
+  The intention is to support the following standard: ICAO 4444 (edition 2016),
+  PAN AIDC, Eurocontrol OLDI 4.2 and Eurocontrol IFPS
 
 homepage:            https://github.com/ofmooseandmen/Aeromess#readme
 license:             BSD3
@@ -23,8 +21,11 @@ cabal-version:       >=1.10
 
 library
   hs-source-dirs:      src
+  ghc-options:         -Wall
   exposed-modules:     Data.Icao.AtsMessage
                      , Data.Icao.Location
+                     , Data.Icao.OtherInformation
+                     , Data.Icao.SupplementaryInformation
                      , Data.Icao.Time
   other-modules:       Data.Aeromess.Parser
                      , Data.Icao.F3
@@ -43,10 +44,12 @@ library
 test-suite Aeromess-test
   type:                exitcode-stdio-1.0
   hs-source-dirs:      test
+  ghc-options:         -Wall
   other-modules:       Data.Icao.ArrivalMessageSpec
                      , Data.Icao.DepartureMessageSpec
                      , Data.Icao.Expected
                      , Data.Icao.LocationSpec
+                     , Data.Icao.OtherInformationSpec
                      , Data.Icao.TimeSpec
   main-is:             Spec.hs
   build-depends:       base

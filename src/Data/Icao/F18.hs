@@ -1,101 +1,17 @@
 -- |
--- ICAO Field Type 18 - Other information.
--- This field is a collection of switches all optional, use the withXXXX function to
--- build a new instance starting from 'emptyOtherInformation'.
+-- ICAO Field Type 18 parser.
 module Data.Icao.F18
-    ( OtherInformation(..)
-    , PbnCapabilityCode(..)
-    , SpecicalHandlingReason(..)
-    , parser
-    -- | 'OtherInformation' builder functions
-    , emptyOtherInformation
-    , withSpecialHandlingReason
-    , withPbnCapabilities
-    , withNavigationEquipments
-    , withCommunicationEquipments
-    , withDataCommunicationEquipments
-    , withSurveillanceEquipments
-    , withDeparture
-    , withDestination
-    , withDof
+    ( parser
     ) where
 
 import Data.Aeromess.Parser
 import Data.Icao.Lang
 import Data.Icao.Location
+import Data.Icao.OtherInformation
 import qualified Data.Icao.Switches as S
 import Data.Icao.Time
 import Data.Maybe
 import Prelude hiding (words)
-
--- | PBN (Performance Base Navigation) capabilities code.
--- Provides both RNAV (Area Navigation) and RNP (Required Navigation Performance) capabilities.
--- <https://en.wikipedia.org/wiki/Area_navigation>
--- <https://en.wikipedia.org/wiki/Required_navigation_performance>
-data PbnCapabilityCode
-    -- | RNAV
-    = A1 -- ^ RNAV 10 (RNP 10)
-    | B1 -- ^ RNAV 5 all permitted sensors
-    | B2 -- ^ RNAV 5 GNSS
-    | B4 -- ^ RNAV 5 VOR/DME
-    | B3 -- ^ RNAV 5 DME/DME
-    | B5 -- ^ RNAV 5 INS or IRS
-    | B6 -- ^ RNAV 5 LORANC
-    | C1 -- ^ RNAV 2 all permitted sensors
-    | C2 -- ^ RNAV 2 GNSS
-    | C3 -- ^ RNAV 2 DME/DME
-    | C4 -- ^ RNAV 2 DME/DME/IRU
-    | D1 -- ^ RNAV 1 all permitted sensors
-    | D2 -- ^ RNAV 1 GNSS
-    | D3 -- ^ RNAV 1 DME/DME
-    | D4 -- ^ RNAV 1 DME/DME/IRU
-    -- | RNP
-    | L1 -- ^ RNP 4
-    | O1 -- ^ Basic RNP 1 all permitted sensors
-    | O2 -- ^ Basic RNP 1 GNSS
-    | O3 -- ^ Basic RNP 1 DME/DME
-    | O4 -- ^ Basic RNP 1 DME/DME/IRU
-    | S1 -- ^ RNP APCH
-    | S2 -- ^ RNP APCH with BAR-VNAV
-    | T1 -- ^ RNP AR APCH with RF (special authorization required)
-    | T2 -- ^ RNP AR APCH without RF (special authorization required
-    deriving (Bounded, Enum, Eq, Read, Show)
-
--- | Reason for special handling.
-data SpecicalHandlingReason
-    = ALTRV -- ^ for a flight operated in accordance with an altitude reservation
-    | ATFMX -- ^ for a flight approved for exemption from ATFM measures by the appropriate ATS authority;
-    | FFR -- ^ fire-fighting
-    | FLTCK -- ^ flight check for calibration of navaids
-    | HAZMAT -- ^ for a flight carrying hazardous material
-    | HEAD -- ^ a flight with Head of State status
-    | HOSP -- ^ for a medical flight declared by medical authorities
-    | HUM -- ^ for a flight operating on a humanitarian mission
-    | MARSA -- ^ for a flight for which a military entity assumes responsibility for separation of military aircraft
-    | MEDEVAC -- ^ for a life critical medical emergency evacuation
-    | NONRVSM -- ^ for a non-RVSM capable flight intending to operate in RVSM airspace
-    | SAR -- ^ for a flight engaged in a search and rescue mission and
-    | STATE -- ^ for a flight engaged in military, customs or police services
-    deriving (Bounded, Enum, Eq, Read, Show)
-
--- | Other information.
-data OtherInformation = OtherInformation
-    { specicalHandlingReason :: Maybe SpecicalHandlingReason -- ^ Reason for special handling by ATS, e.g. a search and rescue mission.
-    , pbnCapabilities :: [PbnCapabilityCode] -- ^ RNAV and RNP capabilites.
-    , navigationEquipments :: Maybe FreeText -- ^ Significant data related to navigation equipment, other than specified in PBN/,
-                                             -- as required by the appropriate ATS authority. Indicate GNSS augmentation
-                                             -- under this indicator, with a space between two or more methods of
-                                             -- augmentation, e.g. NAV/GBAS SBAS.
-    , communicationEquipments :: Maybe FreeText -- ^ Indicate communication equipment and capabilities not specified in Item 10 a).
-    , dataCommunicationEquipments :: Maybe FreeText -- ^ Indicate data communication equipment and capabilities not specified in 10 a).
-    , surveillanceEquipments :: Maybe FreeText -- ^ Indicate surveillance equipment and capabilities not specified in Item 10 b).
-                                               -- Indicate as many RSP specification(s) as apply to the flight, using designator(s) with no space.
-                                               -- Multiple RSP specifications are separated by a space. Example: RSP180 RSP400.
-    , departure :: Maybe SignificantPoint -- ^ Name and location of departure aerodrome, if ZZZZ is inserted in Item 13, or the ATS unit from
-                                          -- which supplementary flight plan data can be obtained, if AFIL is inserted in Item 13.
-    , destination :: Maybe SignificantPoint -- ^ Name and location of destination aerodrome, if ZZZZ is inserted in Item 16.
-    , dof :: Maybe Date -- ^ The date of flight departure in a six-figure format.
-    } deriving (Show, Eq)
 
 data Data
     = Sts SpecicalHandlingReason
@@ -107,6 +23,9 @@ data Data
     | Dep SignificantPoint
     | Dest SignificantPoint
     | Dof Date
+    | Reg FreeText
+    | Eet [EstimatedElapsedTime]
+    | Sel SelCalCode
 
 data SwitchKey
     = STS
@@ -118,39 +37,10 @@ data SwitchKey
     | DEP
     | DEST
     | DOF
+    | REG
+    | EET
+    | SEL
     deriving (Bounded, Enum, Eq, Read, Show)
-
--- | Returns empty 'OtherInformation'.
-emptyOtherInformation :: OtherInformation
-emptyOtherInformation =
-    OtherInformation Nothing [] Nothing Nothing Nothing Nothing Nothing Nothing Nothing
-
-withSpecialHandlingReason :: SpecicalHandlingReason -> OtherInformation -> OtherInformation
-withSpecialHandlingReason s oi = oi {specicalHandlingReason = Just s}
-
-withPbnCapabilities :: [PbnCapabilityCode] -> OtherInformation -> OtherInformation
-withPbnCapabilities p oi = oi {pbnCapabilities = p}
-
-withNavigationEquipments :: FreeText -> OtherInformation -> OtherInformation
-withNavigationEquipments n oi = oi {navigationEquipments = Just n}
-
-withCommunicationEquipments :: FreeText -> OtherInformation -> OtherInformation
-withCommunicationEquipments c oi = oi {navigationEquipments = Just c}
-
-withDataCommunicationEquipments :: FreeText -> OtherInformation -> OtherInformation
-withDataCommunicationEquipments d oi = oi {navigationEquipments = Just d}
-
-withSurveillanceEquipments :: FreeText -> OtherInformation -> OtherInformation
-withSurveillanceEquipments s oi = oi {navigationEquipments = Just s}
-
-withDeparture :: SignificantPoint -> OtherInformation -> OtherInformation
-withDeparture d oi = oi {departure = Just d}
-
-withDestination :: SignificantPoint -> OtherInformation -> OtherInformation
-withDestination d oi = oi {destination = Just d}
-
-withDof :: Date -> OtherInformation -> OtherInformation
-withDof d oi = oi {dof = Just d}
 
 otherInfoFiller :: Data -> OtherInformation -> OtherInformation
 otherInfoFiller (Sts x) o = o {specicalHandlingReason = Just x}
@@ -162,6 +52,10 @@ otherInfoFiller (Sur x) o = o {surveillanceEquipments = Just x}
 otherInfoFiller (Dep x) o = o {departure = Just x}
 otherInfoFiller (Dest x) o = o {destination = Just x}
 otherInfoFiller (Dof x) o = o {dof = Just x}
+otherInfoFiller (Reg x) o = o {registration = Just x}
+otherInfoFiller (Eet x) o = o {eets = x}
+otherInfoFiller (Sel x) o = o {selCalCode = Just x}
+
 
 mkOtherInformation :: [Data] -> OtherInformation
 mkOtherInformation = foldl (flip otherInfoFiller) emptyOtherInformation
@@ -172,15 +66,32 @@ pbnParser = some (enumeration :: Parser PbnCapabilityCode)
 stsParser :: Parser SpecicalHandlingReason
 stsParser = enumeration :: Parser SpecicalHandlingReason
 
+eetParser :: Parser EstimatedElapsedTime
+eetParser = do
+    l <- significantPointParser
+    d <- hhmmParser
+    return (EstimatedElapsedTime l d)
+
+eetsParser :: Parser [EstimatedElapsedTime]
+eetsParser = some eetParser
+
+selCalParser :: Parser SelCalCode
+selCalParser = word >>= mkSelCalCode
+
 switchParser :: Parser (Maybe Data)
 switchParser =
-    S.parser STS stsParser Sts <|> S.parser PBN pbnParser Pbn <|> S.parser NAV freeTextParser Nav <|>
+    S.parser STS stsParser Sts <|>
+    S.parser PBN pbnParser Pbn <|>
+    S.parser NAV freeTextParser Nav <|>
     S.parser COM freeTextParser Com <|>
     S.parser DAT freeTextParser Dat <|>
     S.parser SUR freeTextParser Sur <|>
     S.parser DEP significantPointParser Dep <|>
     S.parser DEST significantPointParser Dest <|>
-    S.parser DOF dateParser Dof
+    S.parser DOF dateParser Dof <|>
+    S.parser REG freeTextParser Reg <|>
+    S.parser EET eetsParser Eet <|>
+    S.parser SEL selCalParser Sel
 
 -- | Field Type 18 parser.
 parser :: Parser OtherInformation
@@ -190,5 +101,5 @@ parser = do
         then return emptyOtherInformation
         else do
             s <- some switchParser
-            optional dash
+            _ <- optional dash
             return (mkOtherInformation (catMaybes s))

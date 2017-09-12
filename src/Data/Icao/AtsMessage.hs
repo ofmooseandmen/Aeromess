@@ -37,7 +37,7 @@ import Data.Icao.Location
 import Data.Icao.OtherInformation
 import Data.Icao.SupplementaryInformation
 import Data.Icao.Time
-import Data.Maybe()
+import Data.Maybe ()
 
 -- | An ICAO 4444 ATS message.
 data AtsMessage
@@ -56,7 +56,7 @@ data AtsMessage
                      , ata :: Hhmm -- ^ actual time of arrival.
                      , adarName :: Maybe String -- ^ name of arrival aerodrome, if 'adar' is 'ZZZZ'.
                       }
-    -- | Departure message transmitted transmitted by the ATS unit serving the
+    -- | Departure message transmitted by the ATS unit serving the
     -- departure aerodrome to all recipients of basic flight plan data.
     | DepartureMessage { aircraftIndentification :: F7.AircraftIdentification -- ^ aircraft identification.
                        , ssrMode :: Maybe F7.SsrMode -- ^ SSR mode.
@@ -66,6 +66,16 @@ data AtsMessage
                        , ades :: Aerodrome -- ^ aerodrome of arrival.
                        , otherInformation :: OtherInformation -- ^ other information.
                         }
+    -- | Delay message transmiitted when the departure of an aircraft, for which basic flight plan data has been sent,
+    -- is delayed by more than 30 minutes after the estimated off-block time contained in the basic flight plan data.
+    | DelayMessage { aircraftIndentification :: F7.AircraftIdentification -- ^ aircraft identification.
+                   , ssrMode :: Maybe F7.SsrMode -- ^ SSR mode.
+                   , ssrCode :: Maybe F7.SsrCode -- ^ SSR code.
+                   , adep :: Aerodrome -- ^ aerodrome of departure.
+                   , eobt :: Hhmm -- ^ revised estimated off-block time
+                   , ades :: Aerodrome -- ^ aerodrome of arrival.
+                   , otherInformation :: OtherInformation -- ^ other information.
+                    }
     deriving (Eq, Show)
 
 -- | PARSERS.
@@ -88,15 +98,17 @@ arrParser = do
              (F17.ata f17)
              (F17.adarName f17))
 
--- | 'DepartureMessage' parser.
-depParser :: Parser AtsMessage
-depParser = do
+-- | common parser for DEP and DLA messages.
+depParser' ::
+       (F7.AircraftIdentification -> Maybe F7.SsrMode -> Maybe F7.SsrCode -> Aerodrome -> Hhmm -> Aerodrome -> OtherInformation -> AtsMessage)
+    -> Parser AtsMessage
+depParser' f = do
     f7 <- F7.parser
     f13 <- F13.parser
     f16Ades <- F16.adesParser
     f18 <- F18.parser
     return
-        (DepartureMessage
+        (f
              (F7.aircraftIdentification f7)
              (F7.ssrMode f7)
              (F7.ssrCode f7)
@@ -105,6 +117,14 @@ depParser = do
              f16Ades
              f18)
 
+-- | 'DepartureMessage' parser.
+depParser :: Parser AtsMessage
+depParser = depParser' DepartureMessage
+
+-- | 'DelayMessage' parser.
+dlaParser :: Parser AtsMessage
+dlaParser = depParser' DelayMessage
+
 -- | ATS message content parser - i.e. everything between '(' and ')'
 contentParser :: Parser AtsMessage
 contentParser = do
@@ -112,7 +132,8 @@ contentParser = do
     case f3 of
         "ARR" -> arrParser
         "DEP" -> depParser
-        _     -> unexpected ("unexpected message=" ++ show f3)
+        "DLA" -> dlaParser
+        _ -> unexpected ("unexpected message=" ++ show f3)
 
 -- | 'AtsMessage' parser.
 parser :: Parser AtsMessage

@@ -9,6 +9,8 @@ import Data.Icao.Lang
 import Data.Icao.Time
 import Data.Maybe()
 
+-- * Data
+
 -- | Transmitter
 data Transmitter
     = UHF -- ^ frequency 243.0 MHz (UHF)
@@ -52,6 +54,8 @@ data SupplementaryInformation = SupplementaryInformation
     , otherRemarks :: Maybe FreeText -- ^ plain language indicating any other survival equipment carried and any other useful remarks
     , pilotInCommand :: Maybe FreeText -- ^ the name of the pilot-in-command and possibly the contact phone
     } deriving (Eq, Show)
+
+-- * Builders
 
 -- | Returns empty 'SupplementaryInformation'.
 emptySupplementaryInformation :: SupplementaryInformation

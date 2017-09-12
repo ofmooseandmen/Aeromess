@@ -38,16 +38,10 @@ data Data = Data
     , ssrCode :: Maybe SsrCode
     }
 
-modeParser :: Parser SsrMode
-modeParser = enumeration :: Parser SsrMode
-
-codeParser :: Parser SsrCode
-codeParser = fmap SsrCode (octal 4)
-
 smcParser' :: Parser (SsrMode, SsrCode)
 smcParser' = do
-    m <- modeParser
-    c <- codeParser
+    m <- enumeration :: Parser SsrMode
+    c <- fmap SsrCode (octal 4)
     return (m, c)
 
 smcParser :: Parser (Maybe (SsrMode, SsrCode))

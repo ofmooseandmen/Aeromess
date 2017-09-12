@@ -3,13 +3,14 @@
 -- This field is a collection of switches all optional, use the withXXXX function to
 -- build a new instance starting from 'emptyOtherInformation'.
 module Data.Icao.OtherInformation
-    ( OtherInformation(..)
+    ( -- * Data
+      OtherInformation(..)
     , PbnCapabilityCode(..)
     , SpecicalHandlingReason(..)
     , EstimatedElapsedTime(..)
     , SelCalCode
+    -- * Builders
     , mkSelCalCode
-    -- | 'OtherInformation' builders
     , emptyOtherInformation
     , withSpecialHandlingReason
     , withPbnCapabilities

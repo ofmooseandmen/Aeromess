@@ -30,6 +30,7 @@ library
   other-modules:       Data.Aeromess.Parser
                      , Data.Icao.F3
                      , Data.Icao.F7
+                     , Data.Icao.F9
                      , Data.Icao.F13
                      , Data.Icao.F16
                      , Data.Icao.F17

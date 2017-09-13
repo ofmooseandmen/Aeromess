@@ -1,10 +1,11 @@
 -- |
 -- ICAO Field Type 7 - Aircraft identification and SSR mode and code.
+-- Note: according to the standard SSR mode is always A. Actual type transponder
+-- is provided in Field Type 10.
 module Data.Icao.F7
     ( AircraftIdentification
     , SsrCode
-    , SsrMode(..)
-    , Data(aircraftIdentification, ssrMode, ssrCode)
+    , Data(aircraftIdentification, ssrCode)
     , mkAircraftIdentification
     , mkSsrCode
     , parser
@@ -19,13 +20,6 @@ newtype AircraftIdentification =
     AircraftIdentification String
     deriving (Eq, Show)
 
--- | Secondary Surveillance Radar mode.
-data SsrMode
-    = A
-    | C
-    | S
-    deriving (Bounded, Enum, Eq, Read, Show)
-
 -- | Secondary Surveillance Rada code, 4 octal digits.
 newtype SsrCode =
     SsrCode String
@@ -34,18 +28,17 @@ newtype SsrCode =
 -- | Field Type 7 data.
 data Data = Data
     { aircraftIdentification :: AircraftIdentification
-    , ssrMode :: Maybe SsrMode
     , ssrCode :: Maybe SsrCode
     }
 
-smcParser' :: Parser (SsrMode, SsrCode)
-smcParser' = do
-    m <- enumeration :: Parser SsrMode
+ssrCodeParser' :: Parser SsrCode
+ssrCodeParser' = do
+    _ <- char 'A'
     c <- fmap SsrCode (octal 4)
-    return (m, c)
+    return c
 
-smcParser :: Parser (Maybe (SsrMode, SsrCode))
-smcParser = optional (slash >> smcParser')
+ssrCodeParser :: Parser (Maybe SsrCode)
+ssrCodeParser = optional (slash >> ssrCodeParser')
 
 acIdParser :: Parser AircraftIdentification
 acIdParser = do
@@ -56,9 +49,9 @@ acIdParser = do
 parser :: Parser Data
 parser = do
     acId <- acIdParser
-    smc <- smcParser
+    code <- ssrCodeParser
     _ <- dash
-    return (Data acId (fmap fst smc) (fmap snd smc))
+    return (Data acId code)
 
 -- | 'AircraftIdentification' smart constructor. Fails if given identification is
 -- not valid.

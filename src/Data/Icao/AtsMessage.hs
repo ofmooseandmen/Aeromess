@@ -14,10 +14,16 @@ module Data.Icao.AtsMessage
     -- re-exported data
     , F7.AircraftIdentification
     , F7.SsrCode
-    , F7.SsrMode(..)
+    , F8.FlightRules(..)
+    , F8.FlightType(..)
+    , F9.AircraftType
+    , F9.WakeTurbulenceCategory(..)
+    , F10.ComNavAppCapabilityCode(..)
+    , F10.SurveillanceCapabilityCode(..)
     -- re-exported smart constructors
     , F7.mkAircraftIdentification
     , F7.mkSsrCode
+    , F9.mkAircraftType
     -- re-exported Parser
     , Parser
     , Error(message, column)
@@ -32,6 +38,9 @@ import qualified Data.Icao.F17 as F17
 import qualified Data.Icao.F18 as F18
 import qualified Data.Icao.F3 as F3
 import qualified Data.Icao.F7 as F7
+import qualified Data.Icao.F8 as F8
+import qualified Data.Icao.F9 as F9
+import qualified Data.Icao.F10 as F10
 import Data.Icao.Lang
 import Data.Icao.Location
 import Data.Icao.OtherInformation
@@ -47,7 +56,6 @@ data AtsMessage
     -- when a controlled flight which has experienced failure of two-way communication
     -- has landed, by the aerodrome control tower at the arrival aerodrome.
     = ArrivalMessage { aircraftIndentification :: F7.AircraftIdentification -- ^ aircraft identification.
-                     , ssrMode :: Maybe F7.SsrMode -- ^ SSR mode.
                      , ssrCode :: Maybe F7.SsrCode -- ^ SSR code.
                      , adep :: Aerodrome -- ^ aerodrome of departure.
                      , eobt :: Hhmm -- ^ estimated off-block time.
@@ -59,7 +67,6 @@ data AtsMessage
     -- | Departure message transmitted by the ATS unit serving the
     -- departure aerodrome to all recipients of basic flight plan data.
     | DepartureMessage { aircraftIndentification :: F7.AircraftIdentification -- ^ aircraft identification.
-                       , ssrMode :: Maybe F7.SsrMode -- ^ SSR mode.
                        , ssrCode :: Maybe F7.SsrCode -- ^ SSR code.
                        , adep :: Aerodrome -- ^ aerodrome of departure.
                        , atd :: Hhmm -- ^ actual time of departure.
@@ -69,7 +76,6 @@ data AtsMessage
     -- | Delay message transmiitted when the departure of an aircraft, for which basic flight plan data has been sent,
     -- is delayed by more than 30 minutes after the estimated off-block time contained in the basic flight plan data.
     | DelayMessage { aircraftIndentification :: F7.AircraftIdentification -- ^ aircraft identification.
-                   , ssrMode :: Maybe F7.SsrMode -- ^ SSR mode.
                    , ssrCode :: Maybe F7.SsrCode -- ^ SSR code.
                    , adep :: Aerodrome -- ^ aerodrome of departure.
                    , eobt :: Hhmm -- ^ revised estimated off-block time
@@ -89,7 +95,6 @@ arrParser = do
     return
         (ArrivalMessage
              (F7.aircraftIdentification f7)
-             (F7.ssrMode f7)
              (F7.ssrCode f7)
              (F13.adep f13)
              (F13.time f13)
@@ -100,7 +105,7 @@ arrParser = do
 
 -- | common parser for DEP and DLA messages.
 depParser' ::
-       (F7.AircraftIdentification -> Maybe F7.SsrMode -> Maybe F7.SsrCode -> Aerodrome -> Hhmm -> Aerodrome -> OtherInformation -> AtsMessage)
+       (F7.AircraftIdentification -> Maybe F7.SsrCode -> Aerodrome -> Hhmm -> Aerodrome -> OtherInformation -> AtsMessage)
     -> Parser AtsMessage
 depParser' f = do
     f7 <- F7.parser
@@ -110,7 +115,6 @@ depParser' f = do
     return
         (f
              (F7.aircraftIdentification f7)
-             (F7.ssrMode f7)
              (F7.ssrCode f7)
              (F13.adep f13)
              (F13.time f13)

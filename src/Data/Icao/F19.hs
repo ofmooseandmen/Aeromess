@@ -84,8 +84,8 @@ lfParser = do
     c <- oneOf "LF"
     return $
         case c of
-            'L' -> LIGHT
-            'F' -> FLUORESCEIN
+            'L' -> WITH_LIGHT
+            'F' -> WITH_FLUORESCEIN
             _   -> error "?"
 
 uvParser :: Parser LifeJacket
@@ -93,8 +93,8 @@ uvParser = do
     c <- oneOf "UV"
     return $
         case c of
-            'U' -> RADIO_UHF
-            'V' -> RADIO_VHF
+            'U' -> WITH_RADIO_UHF
+            'V' -> WITH_RADIO_VHF
             _   -> error "?"
 
 ljParser :: Parser [LifeJacket]

@@ -28,10 +28,10 @@ data SurvivalEquipment
 
 -- | Life Jacket
 data LifeJacket
-    = LIGHT -- ^ life jacket equipped with lights
-    | FLUORESCEIN -- ^ life jacke equipped with fluorescein
-    | RADIO_UHF -- ^ life jacket radio equipped with UHF on frequency 243.0 MHz
-    | RADIO_VHF -- ^ life jacket radio is equipped with VHF on frequency 121.5 MHz
+    = WITH_LIGHT -- ^ life jacket equipped with lights
+    | WITH_FLUORESCEIN -- ^ life jacke equipped with fluorescein
+    | WITH_RADIO_UHF -- ^ life jacket radio equipped with UHF on frequency 243.0 MHz
+    | WITH_RADIO_VHF -- ^ life jacket radio is equipped with VHF on frequency 121.5 MHz
     deriving (Bounded, Enum, Eq, Read, Show)
 
 -- | Dinghies

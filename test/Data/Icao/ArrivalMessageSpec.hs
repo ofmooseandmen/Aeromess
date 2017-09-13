@@ -15,7 +15,6 @@ spec =
                 (ArrivalMessage
                      (mkAircraftIdentification' "CSA406")
                      Nothing
-                     Nothing
                      (mkAerodrome' "LHBP")
                      (mkHhmm' 8 0)
                      Nothing
@@ -27,7 +26,6 @@ spec =
             Right
                 (ArrivalMessage
                      (mkAircraftIdentification' "SAS2000")
-                     (Just A)
                      (Just (mkSsrCode' "1001"))
                      (mkAerodrome' "ESMS")
                      (mkHhmm' 8 0)
@@ -41,7 +39,6 @@ spec =
                 (ArrivalMessage
                      (mkAircraftIdentification' "AFR154")
                      Nothing
-                     Nothing
                      (mkAerodrome' "LFPO")
                      (mkHhmm' 8 3)
                      (Just (mkAerodrome' "ELLX"))
@@ -53,7 +50,6 @@ spec =
             Right
                 (ArrivalMessage
                      (mkAircraftIdentification' "AFR154")
-                     Nothing
                      Nothing
                      (mkAerodrome' "LFPO")
                      (mkHhmm' 8 3)

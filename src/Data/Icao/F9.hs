@@ -2,7 +2,11 @@
 -- ICAO Field Type 9 - Number and type of aircraft and wake turbulence category.
 module Data.Icao.F9
     ( AircraftType
+<<<<<<< HEAD
     , WakeTurbulenceCategory
+=======
+    , WakeTurbulenceCategory(..)
+>>>>>>> F9 + DLA
     , Data(acNbr, acType, wtc)
     , mkAircraftType
     , acParser
@@ -20,10 +24,17 @@ newtype AircraftType =
 
 -- | Wake Turbulence Category.
 data WakeTurbulenceCategory
+<<<<<<< HEAD
     = L -- ^ light
     | M -- ^ medium
     | H -- ^ heavy
     | J -- ^ Jumbo
+=======
+    = LIGHT -- ^ light
+    | MEDIUM -- ^ medium
+    | HEAVY -- ^ heavy
+    | JUMBO -- ^ Jumbo
+>>>>>>> F9 + DLA
     deriving (Bounded, Enum, Eq, Read, Show)
 
 -- | Field 9  data.
@@ -54,9 +65,27 @@ acParser = do
     a <- identifier >>= mkAircraftType
     return (n, a)
 
+<<<<<<< HEAD
+=======
+wtcParser :: Parser WakeTurbulenceCategory
+wtcParser = do
+    c <- oneOf "LMHJ"
+    return $
+        case c of
+            'L' -> LIGHT
+            'M' -> MEDIUM
+            'H' -> HEAVY
+            'J' -> JUMBO
+            _ -> error "?"
+
+>>>>>>> F9 + DLA
 -- | Field Type 9 parser.
 parser :: Parser Data
 parser = do
     na <- acParser
+<<<<<<< HEAD
     w <- enumeration :: Parser WakeTurbulenceCategory
+=======
+    w <- wtcParser
+>>>>>>> F9 + DLA
     return (uncurry Data na w)

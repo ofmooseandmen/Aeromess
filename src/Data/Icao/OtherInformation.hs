@@ -33,7 +33,7 @@ import Data.Icao.Time
 import Data.List
 import Data.Maybe()
 
--- | PBN (Performance Base Navigation) capabilities code.
+-- | Code describing PBN (Performance Base Navigation) capabilities.
 -- Provides both RNAV (Area Navigation) and RNP (Required Navigation Performance) capabilities.
 -- <https://en.wikipedia.org/wiki/Area_navigation>
 -- <https://en.wikipedia.org/wiki/Required_navigation_performance>

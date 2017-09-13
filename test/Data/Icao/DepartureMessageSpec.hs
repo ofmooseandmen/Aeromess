@@ -16,17 +16,15 @@ spec =
                 (DepartureMessage
                      (mkAircraftIdentification' "CSA4311")
                      Nothing
-                     Nothing
                      (mkAerodrome' "EGPD")
                      (mkHhmm' 19 23)
                      (mkAerodrome' "ENZV")
                      emptyOtherInformation)
         it "parses a DEP message containing the SSR mode and code" $
-            parse "(DEP-AFR1/C3440-ESSA0800-LFPG-0)" `shouldBe`
+            parse "(DEP-AFR1/A3440-ESSA0800-LFPG-0)" `shouldBe`
             Right
                 (DepartureMessage
                      (mkAircraftIdentification' "AFR1")
-                     (Just C)
                      (Just (mkSsrCode' "3440"))
                      (mkAerodrome' "ESSA")
                      (mkHhmm' 8 0)
@@ -38,7 +36,6 @@ spec =
                 (DepartureMessage
                      (mkAircraftIdentification' "CSA4311")
                      Nothing
-                     Nothing
                      (mkAerodrome' "EGPD")
                      (mkHhmm' 19 23)
                      (mkAerodrome' "ENZV")
@@ -48,7 +45,6 @@ spec =
             Right
                 (DepartureMessage
                        (mkAircraftIdentification' "CSA4311")
-                       Nothing
                        Nothing
                        (mkAerodrome' "EGPD")
                        (mkHhmm' 19 23)

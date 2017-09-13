@@ -1,11 +1,13 @@
 -- | This module provides tools to parse and format METAR.
 -- METAR is a format for reporting weather information.
--- This module is compliant with WMO Technical Regulations - Annex II, but also
--- best effort have been made to cater for small deviations (mostly for US and Canadian METAR).
--- see <http://www.wmo.int/pages/prog/www/WMOCodes/WMO306_vI1/Publications/2016update/WMO306_vI1_en_2011UP2016.pdf>
--- see <https://en.wikipedia.org/wiki/METAR>
--- see <http://sto.iki.fi/metar>
--- see <http://weather.unisys.com/wxp/Appendices/Formats/METAR.html>
+-- This module is compliant with WMO Technical Regulations - Annex II, but
+-- best effort have been made to cater for small deviations (mostly US and Canadian METAR).
+--
+-- == /Relevant links/
+-- - <http://www.wmo.int/pages/prog/www/WMOCodes/WMO306_vI1/Publications/2016update/WMO306_vI1_en_2011UP2016.pdf WMO Technical Regulations - Annex II>
+-- - <https://en.wikipedia.org/wiki/METAR METAR on Wikipedia>
+-- - <http://sto.iki.fi/metar>
+--
 module Data.Wmo.Metar where
 
 import Data.Aeromess.Parser

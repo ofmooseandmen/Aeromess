@@ -32,6 +32,7 @@ module Data.Icao.AtsMessage
     ) where
 
 import Data.Aeromess.Parser
+import qualified Data.Icao.F10 as F10
 import qualified Data.Icao.F13 as F13
 import qualified Data.Icao.F16 as F16
 import qualified Data.Icao.F17 as F17
@@ -40,7 +41,6 @@ import qualified Data.Icao.F3 as F3
 import qualified Data.Icao.F7 as F7
 import qualified Data.Icao.F8 as F8
 import qualified Data.Icao.F9 as F9
-import qualified Data.Icao.F10 as F10
 import Data.Icao.Lang
 import Data.Icao.Location
 import Data.Icao.OtherInformation
@@ -113,13 +113,7 @@ depParser' f = do
     f16Ades <- F16.adesParser
     f18 <- F18.parser
     return
-        (f
-             (F7.aircraftIdentification f7)
-             (F7.ssrCode f7)
-             (F13.adep f13)
-             (F13.time f13)
-             f16Ades
-             f18)
+        (f (F7.aircraftIdentification f7) (F7.ssrCode f7) (F13.adep f13) (F13.time f13) f16Ades f18)
 
 -- | 'DepartureMessage' parser.
 depParser :: Parser AtsMessage

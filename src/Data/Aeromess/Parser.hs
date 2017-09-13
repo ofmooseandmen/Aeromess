@@ -34,10 +34,10 @@ import Control.Monad (mplus)
 import Data.Either
 import Data.Functor.Identity
 import Data.Maybe
+import Prelude hiding (words)
 import qualified Text.Parsec as P
 import qualified Text.Parsec.Char as C
 import qualified Text.Parsec.Error as E
-import Prelude hiding (words)
 
 -- | Parsing error.
 data Error = Error

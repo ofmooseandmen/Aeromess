@@ -11,32 +11,32 @@ import Data.Maybe()
 
 -- * Data
 
--- | Transmitter
+-- | Transmitter.
 data Transmitter
-    = UHF -- ^ frequency 243.0 MHz (UHF)
-    | VHF -- ^ frequency 121.5 MHz (VHF)
-    | ELT -- ^ locator transmitter (ELT)
+    = UHF -- ^ frequency 243.0 MHz (UHF).
+    | VHF -- ^ frequency 121.5 MHz (VHF).
+    | ELT -- ^ locator transmitter (ELT).
     deriving (Bounded, Enum, Eq, Read, Show)
 
--- | Survival equipment
+-- | Survival equipment.
 data SurvivalEquipment
-    = POLAR -- ^  polar survival equipment
-    | DESERT -- ^  desert survival equipment
-    | MARITIME -- ^  maritime survival equipment
-    | JUNGLE -- ^ jungle survival equipment
+    = Polar -- ^  polar survival equipment.
+    | Desert -- ^  desert survival equipment.
+    | Maritime -- ^  maritime survival equipment.
+    | Jungle -- ^ jungle survival equipment.
     deriving (Bounded, Enum, Eq, Read, Show)
 
--- | Life Jacket
+-- | Life Jacket.
 data LifeJacket
-    = WITH_LIGHT -- ^ life jacket equipped with lights
-    | WITH_FLUORESCEIN -- ^ life jacke equipped with fluorescein
-    | WITH_RADIO_UHF -- ^ life jacket radio equipped with UHF on frequency 243.0 MHz
-    | WITH_RADIO_VHF -- ^ life jacket radio is equipped with VHF on frequency 121.5 MHz
+    = WithLight -- ^ life jacket equipped with lights.
+    | WithFluorescein -- ^ life jacke equipped with fluorescein.
+    | WithRadioUHF -- ^ life jacket radio equipped with UHF on frequency 243.0 MHz.
+    | WithRadioVHF -- ^ life jacket radio is equipped with VHF on frequency 121.5 MHz.
     deriving (Bounded, Enum, Eq, Read, Show)
 
--- | Dinghies
+-- | Dinghies.
 data Dinghies = Dinghies
-    { number :: Maybe Natural2 -- ^ the number of dinghies carried.
+    { number :: Maybe Natural2 -- ^ the number of dinghies carried
     , totalCapacity :: Maybe Natural3 -- ^  the total capacity, in persons carried, of all dinghies.
     , covered :: Bool -- ^ whether dinghies are covered.
     , colour :: Maybe FreeText -- ^ the colour of the dinghies.
@@ -44,15 +44,15 @@ data Dinghies = Dinghies
 
 -- | Supplementary information data.
 data SupplementaryInformation = SupplementaryInformation
-    { fuelEndurance :: Maybe Hhmm -- ^ the fuel endurance in hours and minutes
-    , personsOnBoard :: Maybe Natural3 -- ^ the total number of persons on board, when so prescribed by the appropriate ATS authority
-    , availableTransmitters :: [Transmitter] -- ^ special transmitter(s)
-    , survivalEquipments :: [SurvivalEquipment] -- ^ survival equipment(s) carried on board
-    , lifeJackets :: [LifeJacket] -- ^ type of life jackets carried on board
-    , dinghies :: Dinghies -- ^ description of the dinghies caried on board
-    , aircraftDescription :: Maybe FreeText -- ^ the colour of the aircraft and any Significant markings (this may include the aircraft registration)
-    , otherRemarks :: Maybe FreeText -- ^ plain language indicating any other survival equipment carried and any other useful remarks
-    , pilotInCommand :: Maybe FreeText -- ^ the name of the pilot-in-command and possibly the contact phone
+    { fuelEndurance :: Maybe Hhmm -- ^ the fuel endurance in hours and minutes.
+    , personsOnBoard :: Maybe Natural3 -- ^ the total number of persons on board, when so prescribed by the appropriate ATS authority.
+    , availableTransmitters :: [Transmitter] -- ^ special transmitter(s).
+    , survivalEquipments :: [SurvivalEquipment] -- ^ survival equipment(s) carried on board.
+    , lifeJackets :: [LifeJacket] -- ^ type of life jackets carried on board.
+    , dinghies :: Dinghies -- ^ description of the dinghies caried on board.
+    , aircraftDescription :: Maybe FreeText -- ^ the colour of the aircraft and any Significant markings (this may include the aircraft registration).
+    , otherRemarks :: Maybe FreeText -- ^ plain language indicating any other survival equipment carried and any other useful remarks.
+    , pilotInCommand :: Maybe FreeText -- ^ the name of the pilot-in-command and possibly the contact phone.
     } deriving (Eq, Show)
 
 -- * Builders

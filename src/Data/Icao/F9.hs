@@ -20,10 +20,10 @@ newtype AircraftType =
 
 -- | Wake Turbulence Category.
 data WakeTurbulenceCategory
-    = LIGHT -- ^ light
-    | MEDIUM -- ^ medium
-    | HEAVY -- ^ heavy
-    | JUMBO -- ^ Jumbo
+    = Light -- ^ light
+    | Medium -- ^ medium
+    | Heavy -- ^ heavy
+    | Jumbo -- ^ Jumbo
     deriving (Bounded, Enum, Eq, Read, Show)
 
 -- | Field 9  data.
@@ -59,10 +59,10 @@ wtcParser = do
     c <- oneOf "LMHJ"
     return $
         case c of
-            'L' -> LIGHT
-            'M' -> MEDIUM
-            'H' -> HEAVY
-            'J' -> JUMBO
+            'L' -> Light
+            'M' -> Medium
+            'H' -> Heavy
+            'J' -> Jumbo
             _ -> error "?"
 
 -- | Field Type 9 parser.

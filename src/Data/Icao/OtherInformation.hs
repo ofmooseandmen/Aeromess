@@ -68,19 +68,19 @@ data PbnCapabilityCode
 
 -- | Reason for special handling.
 data SpecicalHandlingReason
-    = ALTRV -- ^ for a flight operated in accordance with an altitude reservation
-    | ATFMX -- ^ for a flight approved for exemption from ATFM measures by the appropriate ATS authority;
-    | FFR -- ^ fire-fighting
-    | FLTCK -- ^ flight check for calibration of navaids
-    | HAZMAT -- ^ for a flight carrying hazardous material
-    | HEAD -- ^ a flight with Head of State status
-    | HOSP -- ^ for a medical flight declared by medical authorities
-    | HUM -- ^ for a flight operating on a humanitarian mission
-    | MARSA -- ^ for a flight for which a military entity assumes responsibility for separation of military aircraft
-    | MEDEVAC -- ^ for a life critical medical emergency evacuation
-    | NONRVSM -- ^ for a non-RVSM capable flight intending to operate in RVSM airspace
-    | SAR -- ^ for a flight engaged in a search and rescue mission and
-    | STATE -- ^ for a flight engaged in military, customs or police services
+    = ALTRV -- ^ for a flight operated in accordance with an altitude reservation.
+    | ATFMX -- ^ for a flight approved for exemption from ATFM measures by the appropriate ATS authority.
+    | FFR -- ^ fire-fighting.
+    | FLTCK -- ^ flight check for calibration of navaids.
+    | HAZMAT -- ^ for a flight carrying hazardous material.
+    | HEAD -- ^ a flight with Head of State status.
+    | HOSP -- ^ for a medical flight declared by medical authorities.
+    | HUM -- ^ for a flight operating on a humanitarian mission.
+    | MARSA -- ^ for a flight for which a military entity assumes responsibility for separation of military aircraft.
+    | MEDEVAC -- ^ for a life critical medical emergency evacuation.
+    | NONRVSM -- ^ for a non-RVSM capable flight intending to operate in RVSM airspace.
+    | SAR -- ^ for a flight engaged in a search and rescue mission.
+    | STATE -- ^ for a flight engaged in military, customs or police services.
     deriving (Bounded, Enum, Eq, Read, Show)
 
 -- | A Significant point or FIR boundary designator and the accumulated estimated

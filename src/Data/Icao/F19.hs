@@ -70,10 +70,10 @@ survEquipParser = do
     c <- oneOf "PDMJ"
     return $
         case c of
-            'P' -> POLAR
-            'D' -> DESERT
-            'M' -> MARITIME
-            'J' -> JUNGLE
+            'P' -> Polar
+            'D' -> Desert
+            'M' -> Maritime
+            'J' -> Jungle
             _   -> error "?"
 
 seParser :: Parser [SurvivalEquipment]
@@ -84,8 +84,8 @@ lfParser = do
     c <- oneOf "LF"
     return $
         case c of
-            'L' -> WITH_LIGHT
-            'F' -> WITH_FLUORESCEIN
+            'L' -> WithLight
+            'F' -> WithFluorescein
             _   -> error "?"
 
 uvParser :: Parser LifeJacket
@@ -93,8 +93,8 @@ uvParser = do
     c <- oneOf "UV"
     return $
         case c of
-            'U' -> WITH_RADIO_UHF
-            'V' -> WITH_RADIO_VHF
+            'U' -> WithRadioUHF
+            'V' -> WithRadioVHF
             _   -> error "?"
 
 ljParser :: Parser [LifeJacket]

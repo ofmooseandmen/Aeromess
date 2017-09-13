@@ -60,7 +60,7 @@ data AtsMessage
                      , adep :: Aerodrome -- ^ aerodrome of departure.
                      , eobt :: Hhmm -- ^ estimated off-block time.
                      , originalAdes :: Maybe Aerodrome -- ^ aerodrome of arrival, only in case of a diversionary landing.
-                     , adar :: Aerodrome -- ^actual aerodrome of arrival
+                     , adar :: Aerodrome -- ^actual aerodrome of arrival.
                      , ata :: Hhmm -- ^ actual time of arrival.
                      , adarName :: Maybe String -- ^ name of arrival aerodrome, if 'adar' is 'ZZZZ'.
                       }
@@ -78,13 +78,12 @@ data AtsMessage
     | DelayMessage { aircraftIndentification :: F7.AircraftIdentification -- ^ aircraft identification.
                    , ssrCode :: Maybe F7.SsrCode -- ^ SSR code.
                    , adep :: Aerodrome -- ^ aerodrome of departure.
-                   , eobt :: Hhmm -- ^ revised estimated off-block time
+                   , eobt :: Hhmm -- ^ revised estimated off-block time.
                    , ades :: Aerodrome -- ^ aerodrome of arrival.
                    , otherInformation :: OtherInformation -- ^ other information.
                     }
     deriving (Eq, Show)
 
--- | PARSERS.
 -- | 'ArrivalMessage' parser.
 arrParser :: Parser AtsMessage
 arrParser = do

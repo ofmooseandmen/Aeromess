@@ -27,6 +27,7 @@ library
                      , Data.Icao.OtherInformation
                      , Data.Icao.SupplementaryInformation
                      , Data.Icao.Time
+                     , Data.Wmo.Metar
   other-modules:       Data.Aeromess.Parser
                      , Data.Icao.F3
                      , Data.Icao.F7

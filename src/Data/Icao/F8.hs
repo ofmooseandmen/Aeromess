@@ -25,11 +25,11 @@ data FlightRules
 -- more subsequent changes of flight rules
 -- | Type of flight
 data FlightType
-    = SCHEDULED -- ^ if scheduled air transport
-    | NON_SCHEDULED -- ^ if non-scheduled air transport
-    | GENERAL -- ^ if general aviation
-    | MILITARY -- ^ if military
-    | OTHER -- ^ other flights
+    = Scheduled -- ^ if scheduled air transport
+    | NonScheduled -- ^ if non-scheduled air transport
+    | General -- ^ if general aviation
+    | Military -- ^ if military
+    | Other -- ^ other flights
     deriving (Bounded, Enum, Eq, Read, Show)
 
 -- | Filed Type 8 data.
@@ -54,17 +54,17 @@ flightTypeParser = do
     c <- oneOf "SNGMX"
     return $
         case c of
-            'S' -> SCHEDULED
-            'N' -> NON_SCHEDULED
-            'G' -> GENERAL
-            'M' -> MILITARY
-            'X' -> OTHER
+            'S' -> Scheduled
+            'N' -> NonScheduled
+            'G' -> General
+            'M' -> Military
+            'X' -> Other
             _ -> error "?"
 
 -- | Field Type 8 parser.
 parser :: Parser Data
 parser = do
     fr <- flightRulesParser
-    ft <- optional (flightTypeParser)
+    ft <- optional flightTypeParser
     _ <- dash
     return (Data fr ft)

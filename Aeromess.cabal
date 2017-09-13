@@ -23,6 +23,7 @@ library
   hs-source-dirs:      src
   ghc-options:         -Wall
   exposed-modules:     Data.Icao.AtsMessage
+                     , Data.Icao.Lang
                      , Data.Icao.Location
                      , Data.Icao.OtherInformation
                      , Data.Icao.SupplementaryInformation
@@ -39,7 +40,6 @@ library
                      , Data.Icao.F17
                      , Data.Icao.F18
                      , Data.Icao.F19
-                     , Data.Icao.Lang
                      , Data.Icao.Switches
   build-depends:       base >= 4.7 && < 5
                      , parsec >= 3.1.11 && < 4
@@ -55,6 +55,7 @@ test-suite Aeromess-test
                      , Data.Icao.LocationSpec
                      , Data.Icao.OtherInformationSpec
                      , Data.Icao.TimeSpec
+                     , Data.Wmo.MetarSpec
   main-is:             Spec.hs
   build-depends:       base
                      , Aeromess

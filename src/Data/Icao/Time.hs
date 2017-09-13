@@ -3,17 +3,21 @@
 -- in accordance with the ICAO 4444 edition 2016 standard.
 module Data.Icao.Time
     ( Hhmm(hour, minute)
+    , DayTime(dayOfMonth, time)
     , Date(year, month, day)
     , hhmmParser
     , dateParser
+    , dayTimeParser
     , mkHhmm
     , mkDate
+    , mkDayTime
     , parseHhmm
     , parseDate
+    , parseDayTime
     ) where
 
 import Data.Aeromess.Parser
-import Data.Either()
+import Data.Either ()
 
 -- |'Hhmm' represents a time or duration expressed with hours and minutes only.
 data Hhmm = Hhmm
@@ -26,6 +30,12 @@ data Date = Date
     { year :: Int
     , month :: Int
     , day :: Int
+    } deriving (Eq, Show)
+
+-- | day and time.
+data DayTime = DayTime
+    { dayOfMonth :: Int -- ^ day of month
+    , time :: Hhmm -- ^ hour minute
     } deriving (Eq, Show)
 
 -- | 'Hhmm' parser.
@@ -43,6 +53,14 @@ dateParser = do
     dd <- natural 2
     mkDate yy mm dd
 
+-- | 'DayTime' parser.
+dayTimeParser :: Parser DayTime
+dayTimeParser = do
+    dd <- natural 2
+    hh <- natural 2
+    mm <- natural 2
+    mkDayTime dd hh mm
+
 -- | Parses the given textual representation of a 'Hhmm'.
 -- return either an 'Error' ('Left') or the parsed 'Hhmm' ('Right').
 parseHhmm :: String -> Either Error Hhmm
@@ -52,6 +70,11 @@ parseHhmm = runParser hhmmParser
 -- return either an 'Error' ('Left') or the parsed 'Date' ('Right').
 parseDate :: String -> Either Error Date
 parseDate = runParser dateParser
+
+-- | Parses the given textual representation of a 'DayTime'.
+-- return either an 'Error' ('Left') or the parsed 'DayTime' ('Right').
+parseDayTime :: String -> Either Error DayTime
+parseDayTime = runParser dayTimeParser
 
 -- | 'Hhmm' smart constructor. Fails if given hour and/or minute are not valid.
 mkHhmm :: (Monad m) => Int -> Int -> m Hhmm
@@ -67,3 +90,9 @@ mkDate yy mm dd
     | mm < 1 || mm > 12 = fail ("invalid month=" ++ show mm)
     | dd < 1 || dd > 31 = fail ("invalid day=" ++ show dd)
     | otherwise = return (Date yy mm dd)
+
+-- | 'DayTime' smart constructor. Fails if given day and/or hour and/or minute are not valid.
+mkDayTime :: (Monad m) => Int -> Int -> Int -> m DayTime
+mkDayTime dd hh mm
+    | dd < 1 || dd > 31 = fail ("invalid day=" ++ show dd)
+    | otherwise = fmap (DayTime dd) (mkHhmm hh mm)

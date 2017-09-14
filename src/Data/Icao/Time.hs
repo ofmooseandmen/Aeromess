@@ -2,18 +2,22 @@
 -- Provides data types and functions pertaining to time, duration and dates
 -- in accordance with the ICAO 4444 edition 2016 standard.
 module Data.Icao.Time
-    ( Hhmm(hour, minute)
+    (
+    -- * Data
+      Hhmm(hour, minute)
     , DayTime(dayOfMonth, time)
     , Date(year, month, day)
+    -- * Parsers
     , hhmmParser
     , dateParser
     , dayTimeParser
-    , mkHhmm
-    , mkDate
-    , mkDayTime
     , parseHhmm
     , parseDate
     , parseDayTime
+    -- * Smart constructors
+    , mkHhmm
+    , mkDate
+    , mkDayTime
     ) where
 
 import Data.Aeromess.Parser
@@ -57,9 +61,8 @@ dateParser = do
 dayTimeParser :: Parser DayTime
 dayTimeParser = do
     dd <- natural 2
-    hh <- natural 2
-    mm <- natural 2
-    mkDayTime dd hh mm
+    hhmm <- hhmmParser
+    mkDayTime dd (hour hhmm) (minute hhmm)
 
 -- | Parses the given textual representation of a 'Hhmm'.
 -- return either an 'Error' ('Left') or the parsed 'Hhmm' ('Right').

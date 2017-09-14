@@ -17,7 +17,7 @@ import Prelude hiding (words)
 
 data Data
     = Fe Hhmm
-    | Pob Natural3
+    | Pob PersonsOnBoard
     | At [Transmitter]
     | Se [SurvivalEquipment]
     | Lj [LifeJacket]
@@ -51,6 +51,11 @@ suppInfoFiller (Pn x) o = o {pilotInCommand = Just x}
 
 mkSuppInformation :: [Data] -> SupplementaryInformation
 mkSuppInformation = foldl (flip suppInfoFiller) emptySupplementaryInformation
+
+pobParser :: Parser PersonsOnBoard
+pobParser = do
+    n <- natural 3 <|> natural 2 <|> natural 1
+    mkPersonsOnBoard n
 
 transmitterParser :: Parser Transmitter
 transmitterParser = do
@@ -110,16 +115,16 @@ ljParser = do
 -- The colour of the dinghies (e.g. RED).
 deParser :: Parser Dinghies
 deParser = do
-    nb <- optional (natural2Parser <* space)
-    capa <- optional (natural3Parser <* space)
+    nb <- optional (natural 2 <* space)
+    capa <- optional (natural 3 <* space)
     cov <- optional (char 'C' <* space)
-    col <- optional freeTextParser
-    return (Dinghies nb capa (isJust cov) col)
+    col <- optional word
+    mkDinghies nb capa (isJust cov) col
 
 switchParser :: Parser (Maybe Data)
 switchParser =
     S.parser E hhmmParser Fe <|>
-    S.parser P natural3Parser Pob <|>
+    S.parser P pobParser Pob <|>
     S.parser R atParser At <|>
     S.parser S seParser Se <|>
     S.parser J ljParser Lj <|>

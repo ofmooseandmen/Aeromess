@@ -6,10 +6,8 @@ module Data.Icao.Expected
     , mkCodedDesignator'
     , mkDate'
     , mkDayTime'
+    , mkFreeText'
     , mkHhmm'
-    , mkNatural2'
-    , mkNatural3'
-    , mkNatural4'
     , mkPosition'
     , mkSsrCode'
     ) where
@@ -44,20 +42,11 @@ mkDate' y m d = fromMaybe (error "invalid year/month/day") (mkDate y m d)
 mkDayTime' :: Int -> Int -> Int -> DayTime
 mkDayTime' d h m = fromMaybe (error "invalid day/hour/minute") (mkDayTime d h m)
 
+mkFreeText' :: String -> FreeText
+mkFreeText' s = fromMaybe (error "invalid free text") (mkFreeText s)
+
 mkHhmm' :: Int -> Int -> Hhmm
 mkHhmm' h m = fromMaybe (error "invalid hour/minute") (mkHhmm h m)
-
-mkNatural2' :: Int -> Natural2
-mkNatural2' n =
-   fromMaybe (error "invalid natural") (mkNatural2 n)
-
-mkNatural3' :: Int -> Natural3
-mkNatural3' n =
-    fromMaybe (error "invalid natural") (mkNatural3 n)
-
-mkNatural4' :: Int -> Natural4
-mkNatural4' n =
-    fromMaybe (error "invalid natural") (mkNatural4 n)
 
 mkPosition' :: Float -> Float -> SignificantPoint
 mkPosition' lat long = fromMaybe (error "invalid latitude/longitude") (mkPosition lat long)

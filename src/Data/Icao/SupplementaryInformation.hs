@@ -2,14 +2,40 @@
 -- ICAO Field Type 19 - Supplementary information.
 -- This field is a collection of switches all optional, use the withXXXX function to
 -- build a new instance starting from 'emptySupplementaryInformation'.
-module Data.Icao.SupplementaryInformation where
+module Data.Icao.SupplementaryInformation
+    (
+    -- * Data
+      PersonsOnBoard
+    , Transmitter(..)
+    , SurvivalEquipment(..)
+    , LifeJacket(..)
+    , Dinghies(number, totalCapacity, covered, colour)
+    , SupplementaryInformation(..)
+    -- * Builders
+    , emptySupplementaryInformation
+    , withFuelEndurance
+    , withPersonsOnBoard
+    , witAvailableTransmitters
+    , withSurvivalEquipments
+    , withAircraftDescription
+    , withLifeJackets
+    , withDinghies
+    , withOtherRemarks
+    , withPilotInCommand
+    -- * Smart constructors
+    , mkPersonsOnBoard
+    , mkDinghies
+    ) where
 
-import Data.Char()
+import Data.Char (isUpper)
 import Data.Icao.Lang
 import Data.Icao.Time
-import Data.Maybe()
+import Data.Maybe ()
 
--- * Data
+-- | Persons on board the aircraft.
+newtype PersonsOnBoard =
+    PersonsOnBoard Int
+    deriving (Eq, Show)
 
 -- | Transmitter.
 data Transmitter
@@ -36,16 +62,16 @@ data LifeJacket
 
 -- | Dinghies.
 data Dinghies = Dinghies
-    { number :: Maybe Natural2 -- ^ the number of dinghies carried
-    , totalCapacity :: Maybe Natural3 -- ^  the total capacity, in persons carried, of all dinghies.
+    { number :: Maybe Int -- ^ the number of dinghies carried
+    , totalCapacity :: Maybe Int -- ^  the total capacity, in persons carried, of all dinghies.
     , covered :: Bool -- ^ whether dinghies are covered.
-    , colour :: Maybe FreeText -- ^ the colour of the dinghies.
+    , colour :: Maybe String -- ^ the colour of the dinghies.
     } deriving (Eq, Show)
 
 -- | Supplementary information data.
 data SupplementaryInformation = SupplementaryInformation
     { fuelEndurance :: Maybe Hhmm -- ^ the fuel endurance in hours and minutes.
-    , personsOnBoard :: Maybe Natural3 -- ^ the total number of persons on board, when so prescribed by the appropriate ATS authority.
+    , personsOnBoard :: Maybe PersonsOnBoard -- ^ the total number of persons on board, when so prescribed by the appropriate ATS authority.
     , availableTransmitters :: [Transmitter] -- ^ special transmitter(s).
     , survivalEquipments :: [SurvivalEquipment] -- ^ survival equipment(s) carried on board.
     , lifeJackets :: [LifeJacket] -- ^ type of life jackets carried on board.
@@ -55,19 +81,26 @@ data SupplementaryInformation = SupplementaryInformation
     , pilotInCommand :: Maybe FreeText -- ^ the name of the pilot-in-command and possibly the contact phone.
     } deriving (Eq, Show)
 
--- * Builders
-
 -- | Returns empty 'SupplementaryInformation'.
 emptySupplementaryInformation :: SupplementaryInformation
 emptySupplementaryInformation =
-    SupplementaryInformation Nothing Nothing [] [] [] (Dinghies Nothing Nothing False Nothing) Nothing Nothing Nothing
+    SupplementaryInformation
+        Nothing
+        Nothing
+        []
+        []
+        []
+        (Dinghies Nothing Nothing False Nothing)
+        Nothing
+        Nothing
+        Nothing
 
 -- | Sets the aircraft fuel endurance.
 withFuelEndurance :: Hhmm -> SupplementaryInformation -> SupplementaryInformation
 withFuelEndurance fe si = si {fuelEndurance = Just fe}
 
 -- | Sets the number of persons on board the aircraft.
-withPersonsOnBoard :: Natural3 -> SupplementaryInformation -> SupplementaryInformation
+withPersonsOnBoard :: PersonsOnBoard -> SupplementaryInformation -> SupplementaryInformation
 withPersonsOnBoard n si = si {personsOnBoard = Just n}
 
 -- | Sets the available transmitters on board the aircraft.
@@ -98,3 +131,18 @@ withLifeJackets l si = si {lifeJackets = l}
 -- | Sets the othe remarks.
 withOtherRemarks :: FreeText -> SupplementaryInformation -> SupplementaryInformation
 withOtherRemarks r si = si {pilotInCommand = Just r}
+
+-- | 'PersonsOnBoard' smart constructor. Fails if given number is not in range [1 .. 999].
+mkPersonsOnBoard :: (Monad m) => Int -> m PersonsOnBoard
+mkPersonsOnBoard n
+    | n < 1 || n > 999 = fail ("invalid persons on board=" ++ show n)
+    | otherwise = return (PersonsOnBoard n)
+
+mkDinghies :: (Monad m) => Maybe Int -> Maybe Int -> Bool -> Maybe String -> m Dinghies
+mkDinghies nb cap cov col
+    | maybe False (< 0) nb || maybe False (> 99) nb =
+        fail ("invalid number of dinghies=" ++ show nb)
+    | maybe False (< 0) cap || maybe False (> 999) cap =
+        fail ("invalid total capacity of dinghies=" ++ show cap)
+    | maybe False (not . all isUpper) col = fail ("invalid dinghies color=" ++ show col)
+    | otherwise = return (Dinghies nb cap cov col)

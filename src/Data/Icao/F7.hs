@@ -13,7 +13,7 @@ module Data.Icao.F7
 
 import Data.Aeromess.Parser
 import Data.Char
-import Data.Maybe()
+import Data.Maybe ()
 
 -- | Aircraft identification, a.k.a. call-sign, maximum of 7 uppercase/digit characters.
 newtype AircraftIdentification =
@@ -34,8 +34,7 @@ data Data = Data
 ssrCodeParser' :: Parser SsrCode
 ssrCodeParser' = do
     _ <- char 'A'
-    c <- fmap SsrCode (octal 4)
-    return c
+    fmap SsrCode (octal 4)
 
 ssrCodeParser :: Parser (Maybe SsrCode)
 ssrCodeParser = optional (slash >> ssrCodeParser')

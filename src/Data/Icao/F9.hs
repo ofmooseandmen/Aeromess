@@ -11,7 +11,7 @@ module Data.Icao.F9
 
 import Data.Aeromess.Parser
 import Data.Char
-import Data.Icao.Lang
+import Data.Maybe (fromMaybe)
 
 -- | Aircraft type, e.g. A320
 newtype AircraftType =
@@ -28,7 +28,7 @@ data WakeTurbulenceCategory
 
 -- | Field 9  data.
 data Data = Data
-    { acNbr :: Natural2
+    { acNbr :: Int -- this need to be AcNb
     , acType :: AircraftType
     , wtc :: WakeTurbulenceCategory
     }
@@ -41,18 +41,12 @@ mkAircraftType s
     | not (all (\c -> isDigit c || isUpper c) s) = fail ("invalid aircraft type=" ++ s)
     | otherwise = return (AircraftType s)
 
-oneAsDefault :: (Monad m) => Maybe Natural2 -> m Natural2
-oneAsDefault n =
-    case n of
-        Nothing -> mkNatural2 1
-        Just x -> return x
-
 -- | aircraft number and type parser.
-acParser :: Parser (Natural2, AircraftType)
+acParser :: Parser (Int, AircraftType)
 acParser = do
-    n <- optional (try natural2Parser) >>= oneAsDefault
+    n <- optional (try (natural 1 <|> natural 2))
     a <- identifier >>= mkAircraftType
-    return (n, a)
+    return (fromMaybe 1 n, a)
 
 wtcParser :: Parser WakeTurbulenceCategory
 wtcParser = do

@@ -22,33 +22,32 @@ data Type
     | SPECI -- ^ special report issued when conditions have significantly changed
     deriving (Bounded, Enum, Eq, Read, Show)
 
--- | Degrees in range [0 .. 359].
-newtype Degrees =
-    Degrees Int
+-- | Wind direction in degrees.
+newtype WindDirection =
+    WindDirection Int
     deriving (Eq, Show)
-
--- | Speed unit.
-data SpeedUnit
-    = KT -- ^ knots
-    | MPS -- meters per second
-    | KMH -- kilometers per hour
-    deriving (Bounded, Enum, Eq, Read, Show)
 
 -- | Variable wind direction.
 data VariableDirection = VariableDirection
-    { left :: Degrees -- ^ the left extreme of wind direction.
-    , right :: Degrees -- ^ the right extreme of wind direction.
+    { left :: WindDirection -- ^ the left extreme of wind direction.
+    , right :: WindDirection -- ^ the right extreme of wind direction.
     } deriving (Eq, Show)
+
+-- | Wind speed in appropriate unit.
+data WindSpeed
+    = Kt Int -- ^ knots
+    | Kmh Int -- ^ kilometres per hour
+    | Mps Int -- ^ meters per hour
+    deriving (Eq, Show)
 
 -- | Wind group data.
 -- direction `000` and speed `00` indicates calm conditions.
 data Wind
     = Calm
-    | Wind { direction :: Maybe Degrees -- ^ mean true direction in degrees rounded off to the nearest 10 degrees
-                                 -- from which the wind is blowing, when absent the direction is variable
-           , speed :: Natural2 -- ^ mean speed of the wind over the 10-minute period immediately preceding the observation.
-           , gust :: Maybe Natural2 -- ^ maximum gust wind speed if relevant.
-           , speedUnit :: SpeedUnit -- ^ speed unit.
+    | Wind { direction :: Maybe WindDirection -- ^ mean true direction in degrees rounded off to the nearest 10 degrees
+                                              -- from which the wind is blowing, when absent the direction is variable
+           , speed :: WindSpeed -- ^ mean speed of the wind over the 10-minute period immediately preceding the observation.
+           , gust :: Maybe WindSpeed -- ^ maximum gust wind speed if relevant.
            , variation :: Maybe VariableDirection -- ^ variable wind direction if relevant.
             }
     deriving (Eq, Show)
@@ -60,12 +59,17 @@ data VisibilityTendency
     | NoChange
     deriving (Eq, Show)
 
+-- | Visibility distance in meters.
+newtype VisibilityDistance =
+    VisibilityDistance Int
+    deriving (Eq, Show)
+
 -- | Runway visual range data.
 data RunwayVisualRange = RunwayVisualRange
     { designator :: String -- ^ runway designator, possibility appended with L(eft) C(entral)
                            -- or R(ight) for parallel runways.
-    , minVisibility :: Natural4 -- ^ visibility in meter or minimum visibility if it varies significantly.
-    , maxVisibility :: Maybe Natural4 -- ^ maximum visibility in meter, if visibility varies significantly.
+    , minVisibility :: VisibilityDistance -- ^ visibility in meter or minimum visibility if it varies significantly.
+    , maxVisibility :: Maybe VisibilityDistance -- ^ maximum visibility in meter, if visibility varies significantly.
     , visibilityTendency :: Maybe VisibilityTendency
     } deriving (Eq, Show)
 
@@ -82,8 +86,8 @@ data CompassPoint
 
 -- | Visibility group data.
 data Visibility = Visibility
-    { horizontal :: Natural4 -- ^ horizontal visibility in meters, 9999 indicates a visibility over 10 km.
-    , directionalVariation :: [Natural4] -- ^ directional variation of the visibility.
+    { horizontal :: VisibilityDistance -- ^ horizontal visibility in meters, 9999 indicates a visibility over 10 km.
+    , directionalVariation :: [VisibilityDistance] -- ^ directional variation of the visibility.
     , significantDirection :: Maybe CompassPoint -- ^ most operational significant direction.
     , runways :: [RunwayVisualRange] -- ^ visual range for each runway
     } deriving (Eq, Show)
@@ -148,34 +152,32 @@ data CloudType
     | ToweringCumulus
     deriving (Eq, Show)
 
+-- | Cloud height in meters.
+newtype CloudHeight =
+    CloudHeight Int
+    deriving (Eq, Show)
+
 -- | Clouds group data.
--- height of cloud base and vertical visibility are expressed in meter.
 data Clouds
-    = Few { height :: Natural3
+    = Few { height :: CloudHeight
           , cType :: Maybe CloudType }
-    | Scattered { height :: Natural3
+    | Scattered { height :: CloudHeight
                 , cType :: Maybe CloudType }
-    | Broken { height :: Natural3
+    | Broken { height :: CloudHeight
              , cType :: Maybe CloudType }
-    | Overcast { height :: Natural3
+    | Overcast { height :: CloudHeight
                , cType :: Maybe CloudType }
-    | Obscured { verticalVisibility :: Natural3 }
+    | Obscured { verticalVisibility :: CloudHeight }
     | SkyClear
     | NoCloudBelow1500
     | NoCloudBelow3600 -- ^ used in automatic observations.
     deriving (Eq, Show)
 
--- | Mean sea level pressure unit.
-data PressureUnit
-    = HectoPascal
-    | Inches
-    deriving (Eq, Show)
-
 -- | Mean sea level pressure.
-data Pressure = Pressure
-    { value :: Natural4
-    , unit :: PressureUnit
-    } deriving (Eq, Show)
+data Pressure
+    = Hpa Int -- ^ in hecto Pascals (standard)
+    | InHg Int -- ^ in inches of mercury, tens, units, tenths, and hundredths (US)
+    deriving (Eq, Show)
 
 -- | METAR: an aerodrome routine meteorological report.
 data Metar = Metar
@@ -196,26 +198,39 @@ data Metar = Metar
     , remarks :: Maybe FreeText -- ^ METAR components and miscellaneous abbreviations.
     } deriving (Eq, Show)
 
--- | 'Degrees' parser
-degreesParser :: Parser Degrees
-degreesParser = fmap Degrees (natural 3)
+-- | Speed unit.
+data SpeedUnit
+    = KT -- ^ knots
+    | MPS -- meters per second
+    | KMH -- kilometers per hour
+    deriving (Bounded, Enum, Eq, Read, Show)
+
+-- | Mean sea level pressure unit.
+data PressureUnit
+    = Q -- ^ hPa (standard)
+    | A -- ^ inches of mercury (US)
+    deriving (Bounded, Enum, Eq, Read, Show)
+
+-- | 'WindDirection' parser
+wdParser :: Parser WindDirection
+wdParser = natural 3 >>= mkWindDirection
 
 -- | 'VariableDirection' parser.
 variableDirectionParser :: Parser VariableDirection
 variableDirectionParser = do
     _ <- space
-    l <- degreesParser
+    l <- wdParser
     _ <- char 'V'
-    r <- degreesParser
+    r <- wdParser
     return (VariableDirection l r)
 
 -- | if VRB -> Nothing, else parseDegrees.
-windDirectionParser :: Parser (Maybe Degrees)
+windDirectionParser :: Parser (Maybe WindDirection)
 windDirectionParser = do
     var <- fmap isJust (optional (string "VRB"))
     if var
         then return Nothing
-        else fmap Just degreesParser
+        else fmap Just wdParser
 
 -- | 'Calm' parser.
 calmParser :: Parser Wind
@@ -224,27 +239,44 @@ calmParser = do
     _ <- enumeration :: Parser SpeedUnit
     return Calm
 
+-- | 'WindSpeed' from given speed and unit
+speedFrom :: Int -> SpeedUnit -> WindSpeed
+speedFrom s KT = Kt s
+speedFrom s MPS = Mps s
+speedFrom s KMH = Kmh s
+
 -- | 'Wind' parser.
 windParser :: Parser Wind
 windParser = do
     d <- windDirectionParser
-    s <- natural2Parser
-    g <- optional (char 'G' >> natural2Parser)
+    s <- natural 2
+    g <- optional (char 'G' >> natural 2)
     u <- enumeration :: Parser SpeedUnit
     v <- optional (try variableDirectionParser)
-    return (Wind d s g u v)
+    return (Wind d (speedFrom s u) (fmap (`speedFrom` u) g) v)
 
 -- | 'Visibility' parser.
 visibilityParser :: Parser Visibility
 visibilityParser = do
-    v <- natural4Parser
-    return (Visibility v [] Nothing [])
+    v <- natural 4
+    return (Visibility (VisibilityDistance v) [] Nothing [])
 
--- | 'Degrees' smart constructor. Fails if given integer is outside [0 .. 359].
-mkDegrees :: (Monad m) => Int -> m Degrees
-mkDegrees n
+-- | 'WindDirection' smart constructor. Fails if given integer is outside [0 .. 359].
+mkWindDirection :: (Monad m) => Int -> m WindDirection
+mkWindDirection n
     | n < 0 || n > 359 = fail ("invalid degrees=" ++ show n)
-    | otherwise = return (Degrees n)
+    | otherwise = return (WindDirection n)
+
+-- | CAVOK or visibility, weather and clouds parser.
+-- returns nothing if CAVOK
+vwcParser :: Parser (Maybe (Maybe Visibility, [Weather], [Clouds]))
+vwcParser = do
+    ok <- fmap isJust (optional (string "CAVOK"))
+    if ok
+        then return Nothing
+        else do
+            vs <- visibilityParser
+            return (Just (Just vs, [], []))
 
 -- | 'Metar' parser.
 parser :: Parser Metar
@@ -263,45 +295,10 @@ parser = do
     _ <- space
     wd <- calmParser <|> windParser
     _ <- space
-    ok <- fmap isJust (optional (string "CAVOK"))
-    if ok
-        -- visibility, weather and clouds groups are not present
-        then return
-                 (Metar
-                      rt
-                      (cor1 || cor2)
-                      au
-                      ms
-                      st
-                      dt
-                      wd
-                      True
-                      Nothing
-                      []
-                      []
-                      Nothing
-                      Nothing
-                      Nothing
-                      Nothing)
-        else do
-            vs <- visibilityParser
-            return
-                (Metar
-                     rt
-                     (cor1 || cor2)
-                     au
-                     ms
-                     st
-                     dt
-                     wd
-                     False
-                     (Just vs)
-                     []
-                     []
-                     Nothing
-                     Nothing
-                     Nothing
-                     Nothing)
+    vwc <- vwcParser
+    let ok = isNothing vwc
+    let (vs, we, cl) = fromMaybe (Nothing, [], []) vwc
+    return (Metar rt (cor1 || cor2) au ms st dt wd ok vs we cl Nothing Nothing Nothing Nothing)
 
 -- | Parses the given textual representation of a 'Metar'.
 -- return either an 'Error' ('Left') or the parsed 'Metar' ('Right').

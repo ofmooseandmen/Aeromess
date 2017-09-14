@@ -65,7 +65,7 @@ data AtsMessage
                      , originalAdes :: Maybe Aerodrome -- ^ aerodrome of arrival, only in case of a diversionary landing.
                      , adar :: Aerodrome -- ^actual aerodrome of arrival.
                      , ata :: Hhmm -- ^ actual time of arrival.
-                     , adarName :: Maybe String -- ^ name of arrival aerodrome, if 'adar' is 'ZZZZ'.
+                     , adarName :: Maybe FreeText -- ^ name of arrival aerodrome, if 'adar' is 'ZZZZ'.
                       }
     -- | Departure message transmitted by the ATS unit serving the
     -- departure aerodrome to all recipients of basic flight plan data.

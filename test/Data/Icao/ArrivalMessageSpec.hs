@@ -56,4 +56,4 @@ spec =
                      (Just (mkAerodrome' "ELLX"))
                      (mkAerodrome' "ZZZZ")
                      (mkHhmm' 9 20)
-                     (Just "SOMEWHERE NORTH OF EPINAL"))
+                     (Just (mkFreeText' "SOMEWHERE NORTH OF EPINAL")))

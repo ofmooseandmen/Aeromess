@@ -6,7 +6,8 @@ module Data.Aeromess.Parser
     ( Error(..)
     , Parser
     , (<|>)
-    , betweenParentheses
+    , anyString
+    , between
     , char
     , choice
     , dash
@@ -52,9 +53,13 @@ type Parser a = P.ParsecT String () Identity a
 (<|>) :: Parser a -> Parser a -> Parser a
 p1 <|> p2 = mplus p1 p2
 
--- | Parses @p@ between parentheses.
-betweenParentheses :: Parser a -> Parser a
-betweenParentheses = P.between (char '(') (char ')')
+-- | Parses any string
+anyString :: Parser String
+anyString = some P.anyChar
+
+-- | Parses @p@ between given characters.
+between :: Parser Char -> Parser Char -> Parser a -> Parser a
+between = P.between
 
 -- | Parses given char.
 char :: Char -> Parser Char
@@ -69,10 +74,14 @@ dash :: Parser Char
 dash = char '-'
 
 -- | Parses an enum representation. Returns the parsed value.
-enumeration :: (Bounded a, Enum a, Show a, Read a) => Parser a
+enumeration
+    :: (Bounded a, Enum a, Show a, Read a)
+    => Parser a
 enumeration = enum' show read
   where
-    enum' :: (Bounded a, Enum a) => (a -> String) -> (String -> a) -> Parser a
+    enum'
+        :: (Bounded a, Enum a)
+        => (a -> String) -> (String -> a) -> Parser a
     enum' s r = r <$> choice (map (string . s) [minBound .. maxBound])
 
 -- | Parses at 1 or more upper or numerical character(s). Returns the parsed string.

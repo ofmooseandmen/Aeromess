@@ -108,8 +108,9 @@ witAvailableTransmitters :: [Transmitter] -> SupplementaryInformation -> Supplem
 witAvailableTransmitters t si = si {availableTransmitters = t}
 
 -- | Sets the available survival equipements on board the aircraft.
-withSurvivalEquipments ::
-       [SurvivalEquipment] -> SupplementaryInformation -> SupplementaryInformation
+withSurvivalEquipments :: [SurvivalEquipment]
+                       -> SupplementaryInformation
+                       -> SupplementaryInformation
 withSurvivalEquipments s si = si {survivalEquipments = s}
 
 -- | Sets the aircraft description.
@@ -133,12 +134,16 @@ withOtherRemarks :: FreeText -> SupplementaryInformation -> SupplementaryInforma
 withOtherRemarks r si = si {pilotInCommand = Just r}
 
 -- | 'PersonsOnBoard' smart constructor. Fails if given number is not in range [1 .. 999].
-mkPersonsOnBoard :: (Monad m) => Int -> m PersonsOnBoard
+mkPersonsOnBoard
+    :: (Monad m)
+    => Int -> m PersonsOnBoard
 mkPersonsOnBoard n
     | n < 1 || n > 999 = fail ("invalid persons on board=" ++ show n)
     | otherwise = return (PersonsOnBoard n)
 
-mkDinghies :: (Monad m) => Maybe Int -> Maybe Int -> Bool -> Maybe String -> m Dinghies
+mkDinghies
+    :: (Monad m)
+    => Maybe Int -> Maybe Int -> Bool -> Maybe String -> m Dinghies
 mkDinghies nb cap cov col
     | maybe False (< 0) nb || maybe False (> 99) nb =
         fail ("invalid number of dinghies=" ++ show nb)

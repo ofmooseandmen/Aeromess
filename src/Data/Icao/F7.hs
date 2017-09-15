@@ -54,7 +54,9 @@ parser = do
 
 -- | 'AircraftIdentification' smart constructor. Fails if given identification is
 -- not valid.
-mkAircraftIdentification :: (Monad m) => String -> m AircraftIdentification
+mkAircraftIdentification
+    :: (Monad m)
+    => String -> m AircraftIdentification
 mkAircraftIdentification s
     | null s = fail "empty aicraft identification"
     | length s > 7 = fail "max aircraft identification length (7) exceed"
@@ -68,7 +70,9 @@ validCode c
     | otherwise = False
 
 -- | 'SsrCode' smart constructor. Fails if given code value is not valid.
-mkSsrCode :: (Monad m) => String -> m SsrCode
+mkSsrCode
+    :: (Monad m)
+    => String -> m SsrCode
 mkSsrCode c
     | validCode c = return (SsrCode c)
     | otherwise = fail ("Invalid SSR code=" ++ c ++ ", expected 4 octal digits")

@@ -5,8 +5,8 @@ module Data.Icao.F19
     ) where
 
 import Data.Aeromess.Parser
-import Data.Char()
-import Data.Either()
+import Data.Char ()
+import Data.Either ()
 import Data.Icao.Lang
 import Data.Icao.SupplementaryInformation
 import qualified Data.Icao.Switches as S
@@ -65,7 +65,7 @@ transmitterParser = do
             'U' -> UHF
             'V' -> VHF
             'E' -> ELT
-            _   -> error "?"
+            _ -> error "?"
 
 atParser :: Parser [Transmitter]
 atParser = some transmitterParser
@@ -79,7 +79,7 @@ survEquipParser = do
             'D' -> Desert
             'M' -> Maritime
             'J' -> Jungle
-            _   -> error "?"
+            _ -> error "?"
 
 seParser :: Parser [SurvivalEquipment]
 seParser = some survEquipParser
@@ -91,7 +91,7 @@ lfParser = do
         case c of
             'L' -> WithLight
             'F' -> WithFluorescein
-            _   -> error "?"
+            _ -> error "?"
 
 uvParser :: Parser LifeJacket
 uvParser = do
@@ -100,7 +100,7 @@ uvParser = do
         case c of
             'U' -> WithRadioUHF
             'V' -> WithRadioVHF
-            _   -> error "?"
+            _ -> error "?"
 
 ljParser :: Parser [LifeJacket]
 ljParser = do
@@ -123,9 +123,7 @@ deParser = do
 
 switchParser :: Parser (Maybe Data)
 switchParser =
-    S.parser E hhmmParser Fe <|>
-    S.parser P pobParser Pob <|>
-    S.parser R atParser At <|>
+    S.parser E hhmmParser Fe <|> S.parser P pobParser Pob <|> S.parser R atParser At <|>
     S.parser S seParser Se <|>
     S.parser J ljParser Lj <|>
     S.parser D deParser Di <|>

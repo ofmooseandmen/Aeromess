@@ -109,16 +109,17 @@ arrParser = do
     f13 <- F13.parser
     ades <- optional (try F16.adesParser)
     f17 <- F17.parser
-    return (Arr
-        (ArrivalContent
-             (F7.aircraftIdentification f7)
-             (F7.ssrCode f7)
-             (F13.adep f13)
-             (F13.time f13)
-             ades
-             (F17.adar f17)
-             (F17.ata f17)
-             (F17.adarName f17)))
+    return
+        (Arr
+             (ArrivalContent
+                  (F7.aircraftIdentification f7)
+                  (F7.ssrCode f7)
+                  (F13.adep f13)
+                  (F13.time f13)
+                  ades
+                  (F17.adar f17)
+                  (F17.ata f17)
+                  (F17.adarName f17)))
 
 -- | common parser for DEP and DLA messages.
 depParser' :: Parser (F7.AircraftIdentification, Maybe F7.SsrCode, Aerodrome, Hhmm, Aerodrome, OtherInformation)
@@ -128,7 +129,12 @@ depParser' = do
     f16Ades <- F16.adesParser
     f18 <- F18.parser
     return
-        ((F7.aircraftIdentification f7), (F7.ssrCode f7), (F13.adep f13), (F13.time f13), f16Ades, f18)
+        ( (F7.aircraftIdentification f7)
+        , (F7.ssrCode f7)
+        , (F13.adep f13)
+        , (F13.time f13)
+        , f16Ades
+        , f18)
 
 -- | 'DepartureMessage' parser.
 depParser :: Parser AtsMessage
@@ -156,7 +162,7 @@ contentParser = do
 
 -- | 'AtsMessage' parser.
 parser :: Parser AtsMessage
-parser = betweenParentheses contentParser
+parser = between (char '(') (char ')') contentParser
 
 -- | Parses the given textual representation of an 'AtsMessage'.
 -- return either an 'Error' ('Left') or the parsed 'AtsMessage' ('Right').

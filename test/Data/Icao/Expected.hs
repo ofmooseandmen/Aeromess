@@ -12,7 +12,7 @@ module Data.Icao.Expected
     , mkSsrCode'
     ) where
 
-import Data.Either()
+import Data.Either ()
 import Data.Icao.AtsMessage
 import Data.Maybe
 
@@ -21,14 +21,11 @@ errorStr (Left e) = show e
 errorStr _ = "?????"
 
 mkAerodrome' :: String -> Aerodrome
-mkAerodrome' n =
-    fromMaybe (error "invalid aerodrome name") (mkAerodrome n)
+mkAerodrome' n = fromMaybe (error "invalid aerodrome name") (mkAerodrome n)
 
 mkAircraftIdentification' :: String -> AircraftIdentification
 mkAircraftIdentification' n =
-    fromMaybe
-        (error "invalid aircraft identification")
-        (mkAircraftIdentification n)
+    fromMaybe (error "invalid aircraft identification") (mkAircraftIdentification n)
 
 mkBearingDistance' :: String -> Int -> Int -> SignificantPoint
 mkBearingDistance' n b d = fromMaybe (error "invalid bearing/distance") (mkBearingDistance n b d)

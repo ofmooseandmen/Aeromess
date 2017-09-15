@@ -80,14 +80,18 @@ parseDayTime :: String -> Either Error DayTime
 parseDayTime = runParser dayTimeParser
 
 -- | 'Hhmm' smart constructor. Fails if given hour and/or minute are not valid.
-mkHhmm :: (Monad m) => Int -> Int -> m Hhmm
+mkHhmm
+    :: (Monad m)
+    => Int -> Int -> m Hhmm
 mkHhmm hh mm
     | hh < 0 || hh > 23 = fail ("invalid hour=" ++ show hh)
     | mm < 0 || mm > 59 = fail ("invalid minute=" ++ show mm)
     | otherwise = return (Hhmm hh mm)
 
 -- | 'Date' smart constructor. Fails if given year and/or month and/or day are not valid.
-mkDate :: (Monad m) => Int -> Int -> Int -> m Date
+mkDate
+    :: (Monad m)
+    => Int -> Int -> Int -> m Date
 mkDate yy mm dd
     | yy < 0 || yy > 99 = fail ("invalid year=" ++ show yy)
     | mm < 1 || mm > 12 = fail ("invalid month=" ++ show mm)
@@ -95,7 +99,9 @@ mkDate yy mm dd
     | otherwise = return (Date yy mm dd)
 
 -- | 'DayTime' smart constructor. Fails if given day and/or hour and/or minute are not valid.
-mkDayTime :: (Monad m) => Int -> Int -> Int -> m DayTime
+mkDayTime
+    :: (Monad m)
+    => Int -> Int -> Int -> m DayTime
 mkDayTime dd hh mm
     | dd < 1 || dd > 31 = fail ("invalid day=" ++ show dd)
     | otherwise = fmap (DayTime dd) (mkHhmm hh mm)

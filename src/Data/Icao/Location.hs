@@ -2,7 +2,8 @@
 -- Provides data types and functions pertaining to locations
 -- in accordance with the ICAO 4444 edition 2016 standard.
 module Data.Icao.Location
-    ( -- * Data
+    (
+    -- * Data
       Aerodrome
     , Bearing
     , Distance
@@ -94,7 +95,9 @@ parseAerodrome :: String -> Either Error Aerodrome
 parseAerodrome = runParser aerodromeParser
 
 -- | 'Aerodrome' smart constructor. Fails if the given name is not a valid.
-mkAerodrome :: (Monad m) => String -> m Aerodrome
+mkAerodrome
+    :: (Monad m)
+    => String -> m Aerodrome
 mkAerodrome n
     | length n /= 4 || not (all isUpper n) =
         fail ("invalid aerodrome name=" ++ n ++ " expected 4 [A-Z] characters")
@@ -111,12 +114,16 @@ parseSignificantPoint = runParser significantPointParser
 
 -- | 'CodedDesignator' 'SignificantPoint' smart constructor. Fails if the given name
 -- is not a valid.
-mkCodedDesignator :: (Monad m) => String -> m SignificantPoint
+mkCodedDesignator
+    :: (Monad m)
+    => String -> m SignificantPoint
 mkCodedDesignator n = fmap CodedDesignator (mkPointNameCode n)
 
 -- | 'BearingDistance' 'SignificantPoint' smart constructor. Fails if the given name
 -- and/or bearing and/or distance are not a valid.
-mkBearingDistance :: (Monad m) => String -> Int -> Int -> m SignificantPoint
+mkBearingDistance
+    :: (Monad m)
+    => String -> Int -> Int -> m SignificantPoint
 mkBearingDistance n b d = do
     ref <- mkPointNameCode n
     br <- mkBearing b
@@ -125,33 +132,45 @@ mkBearingDistance n b d = do
 
 -- | 'Position' 'SignificantPoint' smart constructor. Fails if the given latitude
 -- and/or longitude are not valid.
-mkPosition :: (Monad m) => Float -> Float -> m SignificantPoint
+mkPosition
+    :: (Monad m)
+    => Float -> Float -> m SignificantPoint
 mkPosition lat long = do
     la <- mkLatitude lat
     lo <- mkLongitude long
     return (Position (GeographicPosition la lo))
 
-mkBearing :: (Monad m) => Int -> m Bearing
+mkBearing
+    :: (Monad m)
+    => Int -> m Bearing
 mkBearing b
     | b < 0 || b > 359 = fail ("invalid bearing=" ++ show b)
     | otherwise = return (Bearing b)
 
-mkDistance :: (Monad m) => Int -> m Distance
+mkDistance
+    :: (Monad m)
+    => Int -> m Distance
 mkDistance d
     | d < 0 = fail ("invalid distance=" ++ show d)
     | otherwise = return (Distance d)
 
-mkLatitude :: (Monad m) => Float -> m Latitude
+mkLatitude
+    :: (Monad m)
+    => Float -> m Latitude
 mkLatitude lat
     | lat < -90.0 || lat > 90.0 = fail ("invalid latitude=" ++ show lat)
     | otherwise = return (Latitude lat)
 
-mkLongitude :: (Monad m) => Float -> m Longitude
+mkLongitude
+    :: (Monad m)
+    => Float -> m Longitude
 mkLongitude long
     | long < -180.0 || long > 180.0 = fail ("invalid longitude=" ++ show long)
     | otherwise = return (Longitude long)
 
-mkPointNameCode :: (Monad m) => String -> m PointNameCode
+mkPointNameCode
+    :: (Monad m)
+    => String -> m PointNameCode
 mkPointNameCode n
     | length n < 2 || length n > 5 =
         fail ("invalid coded designator=" ++ n ++ " expected 2 to 5 [A-Z] characters")
@@ -189,7 +208,9 @@ north h = h == 'N'
 east :: Char -> Bool
 east m = m == 'E'
 
-decimal :: (Monad m) => Int -> Int -> Bool -> m Float
+decimal
+    :: (Monad m)
+    => Int -> Int -> Bool -> m Float
 decimal dd mm sign
     | mm > 59 = fail ("invalid minute=" ++ show mm)
     | sign = return dec

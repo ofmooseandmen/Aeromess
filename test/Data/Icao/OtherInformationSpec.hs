@@ -2,8 +2,8 @@ module Data.Icao.OtherInformationSpec
     ( spec
     ) where
 
-import Data.Maybe()
 import Data.Icao.OtherInformation
+import Data.Maybe ()
 import Test.Hspec
 
 spec :: Spec

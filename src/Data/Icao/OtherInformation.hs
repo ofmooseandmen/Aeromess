@@ -33,7 +33,7 @@ import Data.Icao.Lang
 import Data.Icao.Location
 import Data.Icao.Time
 import Data.List
-import Data.Maybe()
+import Data.Maybe ()
 
 -- | Code describing PBN (Performance Base Navigation) capabilities.
 -- Provides both RNAV (Area Navigation) and RNP (Required Navigation Performance) capabilities.
@@ -140,7 +140,9 @@ isValidPair s = allowedLetter h && allowedLetter t && h < t
 
 -- | 'SelCalCode' smart constructor. Fails if given string is not a valid
 -- SELCAL code.
-mkSelCalCode :: (Monad m) => String -> m SelCalCode
+mkSelCalCode
+    :: (Monad m)
+    => String -> m SelCalCode
 mkSelCalCode s
     | isValid s = return (SelCalCode s)
     | otherwise = fail ("invalid SELCAL code=" ++ s)

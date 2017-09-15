@@ -35,7 +35,9 @@ data Data = Data
 
 -- | 'AircraftType' smart constructor. Fails if given identification is
 -- not valid.
-mkAircraftType :: (Monad m) => String -> m AircraftType
+mkAircraftType
+    :: (Monad m)
+    => String -> m AircraftType
 mkAircraftType s
     | length s < 2 || length s > 4 = fail "aircraft type must be 2-4 characters"
     | not (all (\c -> isDigit c || isUpper c) s) = fail ("invalid aircraft type=" ++ s)

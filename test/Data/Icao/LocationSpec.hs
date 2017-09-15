@@ -2,7 +2,7 @@ module Data.Icao.LocationSpec
     ( spec
     ) where
 
-import Data.Either()
+import Data.Either ()
 import Data.Icao.Expected
 import Data.Icao.Location
 import Test.Hspec
@@ -19,8 +19,10 @@ spec =
         it "parses 46S078E" $
             parseSignificantPoint "46S078E" `shouldBe` Right (mkPosition' (-46.0) 78.0)
         it "parses 4620N07805W" $
-            parseSignificantPoint "4620N07805W" `shouldBe` Right (mkPosition' 46.333332 (-78.083336))
+            parseSignificantPoint "4620N07805W" `shouldBe`
+            Right (mkPosition' 46.333332 (-78.083336))
         it "parses 4620S07805E" $
-            parseSignificantPoint "4620S07805E" `shouldBe` Right (mkPosition' (-46.333332) 78.083336)
+            parseSignificantPoint "4620S07805E" `shouldBe`
+            Right (mkPosition' (-46.333332) 78.083336)
         it "parses DUB180040" $
             parseSignificantPoint "DUB180040" `shouldBe` Right (mkBearingDistance' "DUB" 180 40)

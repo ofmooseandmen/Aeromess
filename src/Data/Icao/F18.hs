@@ -56,7 +56,6 @@ otherInfoFiller (Reg x) o = o {registration = Just x}
 otherInfoFiller (Eet x) o = o {eets = x}
 otherInfoFiller (Sel x) o = o {selCalCode = Just x}
 
-
 mkOtherInformation :: [Data] -> OtherInformation
 mkOtherInformation = foldl (flip otherInfoFiller) emptyOtherInformation
 
@@ -80,9 +79,7 @@ selCalParser = word >>= mkSelCalCode
 
 switchParser :: Parser (Maybe Data)
 switchParser =
-    S.parser STS stsParser Sts <|>
-    S.parser PBN pbnParser Pbn <|>
-    S.parser NAV freeTextParser Nav <|>
+    S.parser STS stsParser Sts <|> S.parser PBN pbnParser Pbn <|> S.parser NAV freeTextParser Nav <|>
     S.parser COM freeTextParser Com <|>
     S.parser DAT freeTextParser Dat <|>
     S.parser SUR freeTextParser Sur <|>

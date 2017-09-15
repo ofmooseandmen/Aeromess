@@ -13,6 +13,7 @@
 module Data.Wmo.Metar where
 
 import Data.Aeromess.Parser
+import Data.Char (isDigit)
 import Data.Icao.Lang
 import Data.Icao.Location
 import Data.Icao.Time
@@ -39,7 +40,7 @@ data VariableDirection = VariableDirection
 data WindSpeed
     = WindSpeedKt Int -- ^ knots.
     | WindSpeedKmh Int -- ^ kilometres per hour.
-    | WindSpeedMps Int -- ^ meters per hour.
+    | WindSpeedMps Int -- ^ metres per hour.
     deriving (Eq, Show)
 
 -- | Wind group data.
@@ -63,19 +64,29 @@ data VisibilityTendency
 
 -- | Visibility distance in appropriate unit.
 data VisibilityDistance
-    = VisibilityDistanceMeter Int -- ^ meter, standard unit.
+    = VisibilityDistanceMetre Int -- ^ metre, standard unit.
     | VisibilityDistanceMile { unit :: Maybe Int -- ^ mile, formally statute mile, used by US/Canada.
                             ,  fraction :: Maybe (Int, Int) -- ^ mile fraction
                              }
     deriving (Eq, Show)
 
+-- | Runway designator: 2 digits possibility appended with L(eft) C(entral) or R(ight) for parallel runways.
+newtype RunwayDesignator =
+    RunwayDesignator String
+    deriving (Eq, Show)
+
+-- | indicates an extreme value of runway visual range.
+data ExtrmeRvr
+    = Lower
+    | Higher
+    deriving (Eq, Show)
+
 -- | Runway visual range data.
 data RunwayVisualRange = RunwayVisualRange
-    { designator :: String -- ^ runway designator, possibility appended with L(eft) C(entral)
-                           -- or R(ight) for parallel runways.
-    , minVisibility :: VisibilityDistance -- ^ visibility in meter or minimum visibility if it varies significantly.
-    , maxVisibility :: Maybe VisibilityDistance -- ^ maximum visibility in meter, if visibility varies significantly.
-    , visibilityTendency :: Maybe VisibilityTendency
+    { designator :: RunwayDesignator -- ^ runway designator
+    , meanVisibility :: VisibilityDistance -- ^ mean visibility in metre.
+    , isOutsideMeasuringRange :: Maybe ExtrmeRvr -- ^ present only if the RVR values are outside the measuring range of the observing system.
+    , visibilityTendency :: Maybe VisibilityTendency -- ^ visibility tendency.
     } deriving (Eq, Show)
 
 -- | the 8 compass points.
@@ -91,8 +102,9 @@ data CompassPoint
     deriving (Eq, Show)
 
 -- | Visibility group data.
+-- TODO: support NDV keyword.
 data Visibility = Visibility
-    { prevailing :: VisibilityDistance -- ^ prevailing horizontal visibility in meters, 9999 indicates a visibility over 10 km.
+    { prevailing :: VisibilityDistance -- ^ prevailing horizontal visibility in metres, 9999 indicates a visibility over 10 km.
     , lowest :: Maybe VisibilityDistance -- ^ lowest visibility if reported.
     , lowestDirection :: Maybe CompassPoint -- ^ lowest visibility.
     , runways :: [RunwayVisualRange] -- ^ visual range for each runway
@@ -158,7 +170,7 @@ data CloudType
     | ToweringCumulus
     deriving (Eq, Show)
 
--- | Cloud height in meters.
+-- | Cloud height in metres.
 newtype CloudHeight =
     CloudHeight Int
     deriving (Eq, Show)
@@ -208,8 +220,8 @@ data Metar = Metar
 -- | Speed unit.
 data SpeedUnit
     = KT -- ^ knots.
-    | MPS -- meters per second.
-    | KMH -- kilometers per hour.
+    | MPS -- metres per second.
+    | KMH -- kilometres per hour.
     deriving (Bounded, Enum, Eq, Read, Show)
 
 -- | Mean sea level pressure unit.
@@ -278,8 +290,37 @@ windParser = do
     v <- optional (try variableDirectionParser)
     return (Wind d (speedFrom s u) (fmap (`speedFrom` u) g) v)
 
-compassCodeParser :: Parser CompassPoint
-compassCodeParser = do
+-- | 'RunwayVisualRange' parser.
+-- R followed by runway name (2 digits followed optionally by L, R or C)
+-- followed by optionally M or P
+-- followed by mean visibility (metre or feet)
+-- followed by optionally tendency
+rvrParser :: Parser RunwayVisualRange
+rvrParser = do
+    r <- between (char 'R') slash anyString >>= mkRunwayDesignator
+    _o <- optional (char 'M') <|> optional (char 'P')
+    o <-
+        case _o of
+            Just 'M' -> return (Just Lower)
+            Just 'P' -> return (Just Higher)
+            _ -> return Nothing
+    -- TODO parse distance: 4 digit, if followed by FT -> Feet otherwise Metre
+    _t <- optional (oneOf "UDN")
+    t <-
+        case _t of
+            Just 'U' -> return (Just Up)
+            Just 'D' -> return (Just Down)
+            Just 'N' -> return (Just NoChange)
+            _ -> return Nothing
+    _ <- space
+    return (RunwayVisualRange r (VisibilityDistanceMetre 0) o t)
+
+-- | parser of a list of 'RunwayVisualRange'.
+rvrsParser :: Parser [RunwayVisualRange]
+rvrsParser = many (try rvrParser)
+
+compassPointParser :: Parser CompassPoint
+compassPointParser = do
     c <- enumeration :: Parser CompassPointCode
     case c of
         N -> return North
@@ -291,19 +332,21 @@ compassCodeParser = do
         W -> return West
         NW -> return NorthWest
 
--- prevailing visibility on 4 digits in meters
+-- prevailing visibility on 4 digits in metres
 -- followed by optionally a space and 4 digits indicating the lowest visibility
 -- followed by optionally the direction for which the lowest visibility has been observed
 -- followed by runway visibility
 wmoVisibilityParser :: Parser Visibility
 wmoVisibilityParser = do
     v <- natural 4
-    l <- optional (try (space >> natural 4))
+    _ <- space
+    l <- optional (natural 4)
     d <-
         case l of
             Nothing -> return Nothing
-            Just _ -> fmap Just compassCodeParser
-    return (Visibility (VisibilityDistanceMeter v) (fmap VisibilityDistanceMeter l) d [])
+            Just _ -> fmap Just (compassPointParser <* space)
+    r <- rvrsParser
+    return (Visibility (VisibilityDistanceMetre v) (fmap VisibilityDistanceMetre l) d r)
 
 mileFractionParser :: Parser (Int, Int)
 mileFractionParser = do
@@ -319,21 +362,14 @@ faaVisibilityParser :: Parser Visibility
 faaVisibilityParser = do
     m <- try (optional ((natural 2 <|> natural 1) <* (string "SM" <|> string " ")))
     f <- optional mileFractionParser
+    r <- try rvrsParser
     let p = VisibilityDistanceMile m f
-    return (Visibility p Nothing Nothing [])
+    return (Visibility p Nothing Nothing r)
 
 -- | 'Visibility' parser.
 -- FAA deviates from the WMO standard here.
 visibilityParser :: Parser Visibility
 visibilityParser = try wmoVisibilityParser <|> faaVisibilityParser
-
--- | 'WindDirection' smart constructor. Fails if given integer is outside [0 .. 359].
-mkWindDirection
-    :: (Monad m)
-    => Int -> m WindDirection
-mkWindDirection n
-    | n < 0 || n > 359 = fail ("invalid degrees=" ++ show n)
-    | otherwise = return (WindDirection n)
 
 -- | CAVOK or visibility, weather and clouds parser.
 -- returns nothing if CAVOK
@@ -344,8 +380,26 @@ vwcParser = do
         then return Nothing
         else do
             vs <- visibilityParser
-            _ <- space
             return (Just (Just vs, [], []))
+
+-- | 'RunwayDesignator' smart constructor. Fails if given string is not a valid designator.
+mkRunwayDesignator
+    :: (Monad m)
+    => String -> m RunwayDesignator
+mkRunwayDesignator s
+    | length s /= 2 || length s /= 3 = fail ("invalid runway designator=" ++ s)
+    | not (all isDigit (take 2 s)) = fail ("invalid runway designator=" ++ s)
+    | length s == 3 && (last s /= 'C' || last s /= 'R' || last s /= 'L') =
+        fail ("invalid runway designator=" ++ s)
+    | otherwise = return (RunwayDesignator s)
+
+-- | 'WindDirection' smart constructor. Fails if given integer is outside [0 .. 359].
+mkWindDirection
+    :: (Monad m)
+    => Int -> m WindDirection
+mkWindDirection n
+    | n < 0 || n > 359 = fail ("invalid degrees=" ++ show n)
+    | otherwise = return (WindDirection n)
 
 -- | 'Metar' parser.
 parser :: Parser Metar

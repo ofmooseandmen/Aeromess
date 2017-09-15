@@ -20,8 +20,8 @@ import Data.Maybe
 
 -- | type of report.
 data Type
-    = METAR -- ^ periodic report, e.g. generated once an hour or half hour
-    | SPECI -- ^ special report issued when conditions have significantly changed
+    = METAR -- ^ periodic report, e.g. generated once an hour or half hour.
+    | SPECI -- ^ special report issued when conditions have significantly changed.
     deriving (Bounded, Enum, Eq, Read, Show)
 
 -- | Wind direction in degrees.
@@ -37,9 +37,9 @@ data VariableDirection = VariableDirection
 
 -- | Wind speed in appropriate unit.
 data WindSpeed
-    = Kt Int -- ^ knots
-    | Kmh Int -- ^ kilometres per hour
-    | Mps Int -- ^ meters per hour
+    = WindSpeedKt Int -- ^ knots.
+    | WindSpeedKmh Int -- ^ kilometres per hour.
+    | WindSpeedMps Int -- ^ meters per hour.
     deriving (Eq, Show)
 
 -- | Wind group data.
@@ -48,10 +48,10 @@ data Wind
     = Calm
     | Wind { direction :: Maybe WindDirection -- ^ mean true direction in degrees rounded off to the nearest 10 degrees
                                               -- from which the wind is blowing, when absent the direction is variable
-           , speed :: WindSpeed -- ^ mean speed of the wind over the 10-minute period immediately preceding the observation.
-           , gust :: Maybe WindSpeed -- ^ maximum gust wind speed if relevant.
-           , variation :: Maybe VariableDirection -- ^ variable wind direction if relevant.
-            }
+          ,  speed :: WindSpeed -- ^ mean speed of the wind over the 10-minute period immediately preceding the observation.
+          ,  gust :: Maybe WindSpeed -- ^ maximum gust wind speed if relevant.
+          ,  variation :: Maybe VariableDirection -- ^ variable wind direction if relevant.
+           }
     deriving (Eq, Show)
 
 -- | Visibility tendency at the runway.
@@ -63,8 +63,10 @@ data VisibilityTendency
 
 -- | Visibility distance in appropriate unit.
 data VisibilityDistance
-    = Meter Int -- ^ meter, standard unit.
-    | Mile Int -- ^ mile, formally statute mile, used by US/Canada.
+    = VisibilityDistanceMeter Int -- ^ meter, standard unit.
+    | VisibilityDistanceMile { unit :: Maybe Int -- ^ mile, formally statute mile, used by US/Canada.
+                            ,  fraction :: Maybe (Int, Int) -- ^ mile fraction
+                             }
     deriving (Eq, Show)
 
 -- | Runway visual range data.
@@ -85,13 +87,14 @@ data CompassPoint
     | South
     | SouthWest
     | West
+    | NorthWest
     deriving (Eq, Show)
 
 -- | Visibility group data.
 data Visibility = Visibility
-    { horizontal :: VisibilityDistance -- ^ horizontal visibility in meters, 9999 indicates a visibility over 10 km.
-    , directionalVariation :: [VisibilityDistance] -- ^ directional variation of the visibility.
-    , significantDirection :: Maybe CompassPoint -- ^ most operational significant direction.
+    { prevailing :: VisibilityDistance -- ^ prevailing horizontal visibility in meters, 9999 indicates a visibility over 10 km.
+    , lowest :: Maybe VisibilityDistance -- ^ lowest visibility if reported.
+    , lowestDirection :: Maybe CompassPoint -- ^ lowest visibility.
     , runways :: [RunwayVisualRange] -- ^ visual range for each runway
     } deriving (Eq, Show)
 
@@ -215,6 +218,18 @@ data PressureUnit
     | A -- ^ inches of mercury (US).
     deriving (Bounded, Enum, Eq, Read, Show)
 
+-- | compass point code
+data CompassPointCode
+    = N
+    | NE
+    | E
+    | SE
+    | S
+    | SW
+    | W
+    | NW
+    deriving (Bounded, Enum, Eq, Read, Show)
+
 -- | 'WindDirection' parser.
 wdParser :: Parser WindDirection
 wdParser = natural 3 >>= mkWindDirection
@@ -245,9 +260,9 @@ calmParser = do
 
 -- | 'WindSpeed' from given speed and unit.
 speedFrom :: Int -> SpeedUnit -> WindSpeed
-speedFrom s KT = Kt s
-speedFrom s MPS = Mps s
-speedFrom s KMH = Kmh s
+speedFrom s KT = WindSpeedKt s
+speedFrom s MPS = WindSpeedMps s
+speedFrom s KMH = WindSpeedKmh s
 
 -- | 'Wind' parser.
 -- wind direction on 3 digits, degrees
@@ -263,20 +278,49 @@ windParser = do
     v <- optional (try variableDirectionParser)
     return (Wind d (speedFrom s u) (fmap (`speedFrom` u) g) v)
 
--- horizontal visibility on 4 digits in meters
--- followed by optionally a space and 4 digits indicating the variations
--- followed by optionally the significant direction
--- the above looks like: VVVV or VVVVD or VVVV VVVVD.
+compassCodeParser :: Parser CompassPoint
+compassCodeParser = do
+    c <- enumeration :: Parser CompassPointCode
+    case c of
+        N -> return North
+        NE -> return NorthEast
+        E -> return East
+        SE -> return SouthEast
+        S -> return South
+        SW -> return SouthWest
+        W -> return West
+        NW -> return NorthWest
+
+-- prevailing visibility on 4 digits in meters
+-- followed by optionally a space and 4 digits indicating the lowest visibility
+-- followed by optionally the direction for which the lowest visibility has been observed
 -- followed by runway visibility
 wmoVisibilityParser :: Parser Visibility
 wmoVisibilityParser = do
     v <- natural 4
-    return (Visibility (Meter v) [] Nothing [])
+    l <- optional (try (space >> natural 4))
+    d <-
+        case l of
+            Nothing -> return Nothing
+            Just _ -> fmap Just compassCodeParser
+    return (Visibility (VisibilityDistanceMeter v) (fmap VisibilityDistanceMeter l) d [])
 
+mileFractionParser :: Parser (Int, Int)
+mileFractionParser = do
+    n <- natural 1
+    _ <- slash
+    d <- natural 1
+    _ <- string "SM"
+    return (n, d)
+
+-- only prevailing visibility in miles and fraction ending with SM
+-- at least mile (1 digit) or fraction (1 digit / 1 digit) present.
 faaVisibilityParser :: Parser Visibility
 faaVisibilityParser = do
-    v <- natural 4
-    return (Visibility (Mile v) [] Nothing [])
+    m <- try (optional ((natural 2 <|> natural 1) <* (string "SM" <|> string " ")))
+    f <- optional mileFractionParser
+    let p = VisibilityDistanceMile m f
+    return (Visibility p Nothing Nothing [])
 
 -- | 'Visibility' parser.
 -- FAA deviates from the WMO standard here.
@@ -284,7 +328,9 @@ visibilityParser :: Parser Visibility
 visibilityParser = try wmoVisibilityParser <|> faaVisibilityParser
 
 -- | 'WindDirection' smart constructor. Fails if given integer is outside [0 .. 359].
-mkWindDirection :: (Monad m) => Int -> m WindDirection
+mkWindDirection
+    :: (Monad m)
+    => Int -> m WindDirection
 mkWindDirection n
     | n < 0 || n > 359 = fail ("invalid degrees=" ++ show n)
     | otherwise = return (WindDirection n)
@@ -298,6 +344,7 @@ vwcParser = do
         then return Nothing
         else do
             vs <- visibilityParser
+            _ <- space
             return (Just (Just vs, [], []))
 
 -- | 'Metar' parser.

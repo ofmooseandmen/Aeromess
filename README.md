@@ -2,11 +2,14 @@ Aeromess
 ======
 
 [![travis build status](https://img.shields.io/travis/ofmooseandmen/Aeromess/master.svg?label=travis+build)](https://travis-ci.org/ofmooseandmen/Aeromess)
+[![license](https://img.shields.io/badge/license-BSD3-lightgray.svg)](https://opensource.org/licenses/BSD-3-Clause)
 
 Parsers and Formatters for Aeronautical messages.
 ------------------------------
 
-This is a work in progress.
+Aeromess is a [Haskell](http://haskell.org) library for parsing and formatting a wide range of aeronautical messages.
+
+_This is a work in progress_
 
 The intent is to support:
 - [ICAO 4444 Edition 2016](http://flightservicebureau.org/wp-content/uploads/2017/03/ICAO-Doc4444-Pans-Atm-16thEdition-2016-OPSGROUP.pdf)

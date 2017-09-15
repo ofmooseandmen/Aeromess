@@ -15,6 +15,7 @@ before_install:
 - mkdir -p ~/.local/bin
 - export PATH=$HOME/.local/bin:$PATH
 - travis_retry curl -L https://www.stackage.org/stack/linux-x86_64 | tar xz --wildcards --strip-components=1 -C ~/.local/bin '*/stack'
+- stack install hpc-coveralls
 
 # This line does all of the work: installs GHC if necessary, cleans the previous build,
 # build the library, executables, and test suites, and runs the test suites with coverage.
@@ -22,6 +23,10 @@ before_install:
 script:
 - stack --no-terminal clean
 - stack --no-terminal test --coverage --haddock --no-haddock-deps
+
+# report coverage to coveralls.
+after_script:
+  - hpc-coveralls Aeromess-test
 
 # Caching so the next build will be fast too.
 cache:

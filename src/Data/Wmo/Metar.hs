@@ -102,7 +102,6 @@ data CompassPoint
     deriving (Eq, Show)
 
 -- | Visibility group data.
--- TODO: support NDV keyword.
 data Visibility = Visibility
     { prevailing :: VisibilityDistance -- ^ prevailing horizontal visibility in metres, 9999 indicates a visibility over 10 km.
     , lowest :: Maybe VisibilityDistance -- ^ lowest visibility if reported.

@@ -21,18 +21,21 @@ addons:
 
 before_install:
 # Download and unpack the stack executable
-- mkdir -p ~/.local/bin
-- export PATH=$HOME/.local/bin:$PATH
-- travis_retry curl -L https://www.stackage.org/stack/linux-x86_64 | tar xz --wildcards --strip-components=1 -C ~/.local/bin '*/stack'
+  - mkdir -p ~/.local/bin
+  - export PATH=$HOME/.local/bin:$PATH
+  - travis_retry curl -L https://www.stackage.org/stack/linux-x86_64 | tar xz --wildcards --strip-components=1 -C ~/.local/bin '*/stack'
+
+install:
+  - stack setup --no-terminal
 
 # This line does all of the work: installs GHC if necessary, cleans the previous build,
 # build the library, executables, and test suites, and runs the test suites with coverage.
 # --no-terminal works around some quirks in Travis's terminal implementation.
 script:
-- stack --no-terminal clean
-- stack --no-terminal test --coverage --haddock --no-haddock-deps
+  - stack --no-terminal clean
+  - stack --no-terminal test --coverage --haddock --no-haddock-deps
 
 # report coverage to coveralls.
 after_script:
-- travis_retry curl -L https://github.com/rubik/stack-hpc-coveralls/releases/download/v0.0.4.0/shc-linux-x64-$GHCVER.tar.bz2 | tar -xj
-- ./shc Aeromess Aeromess-test
+  - travis_retry curl -L https://github.com/rubik/stack-hpc-coveralls/releases/download/v0.0.4.0/shc-linux-x64-$GHCVER.tar.bz2 | tar -xj
+  - ./shc Aeromess Aeromess-test

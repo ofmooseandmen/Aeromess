@@ -164,11 +164,11 @@ data CloudAmount = CloudAmount
 
 -- | Clouds group data.
 data Clouds
-    = Few CloudAmount -- ^ few amount of clouds
-    | Scattered CloudAmount -- ^ Scattered amount of clouds
-    | Broken CloudAmount -- ^ broken amount of clouds
-    | Overcast CloudAmount -- ^ overcast amount of clouds
-    | Obscured CloudHeight -- ^ sky obscured, gives vertical visibility
+    = Few CloudAmount -- ^ few amount of clouds.
+    | Scattered CloudAmount -- ^ Scattered amount of clouds.
+    | Broken CloudAmount -- ^ broken amount of clouds.
+    | Overcast CloudAmount -- ^ overcast amount of clouds.
+    | Obscured CloudHeight -- ^ sky obscured, gives vertical visibility.
     | SkyClear
     | NoCloudBelow1500
     | NoCloudBelow3600 -- ^ used in automatic observations.
@@ -288,7 +288,7 @@ parser = do
     _ <- space
     -- station.
     st <- aerodromeParser
-    -- WMO allows NIL or AUTO, some other organisation also allow COR
+    -- WMO allows NIL or AUTO, some other organisations also allow COR
     ms <- fmap isJust (optional (try (string " NIL")))
     au <- fmap isJust (optional (try (string " AUTO")))
     cor2 <- fmap isJust (optional (try (string " COR")))

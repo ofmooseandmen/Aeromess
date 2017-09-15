@@ -137,5 +137,5 @@ switchParser =
 parser :: Parser SupplementaryInformation
 parser = do
     s <- some switchParser
-    _ <- optional dash
+    _ <- endOfFieldParser
     return (mkSuppInformation (catMaybes s))

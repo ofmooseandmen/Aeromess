@@ -101,5 +101,5 @@ parser = do
         then return emptyOtherInformation
         else do
             s <- some switchParser
-            _ <- optional dash
+            _ <- endOfFieldParser
             return (mkOtherInformation (catMaybes s))

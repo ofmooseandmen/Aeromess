@@ -2,6 +2,7 @@ Aeromess
 ======
 
 [![travis build status](https://img.shields.io/travis/ofmooseandmen/Aeromess/master.svg?label=travis+build)](https://travis-ci.org/ofmooseandmen/Aeromess)
+[![coverage](https://coveralls.io/repos/github/ofmooseandmen/Aeromess/badge.svg?branch=master)](https://coveralls.io/github/ofmooseandmen/Aeromess?branch=master)
 [![license](https://img.shields.io/badge/license-BSD3-lightgray.svg)](https://opensource.org/licenses/BSD-3-Clause)
 
 Parsers and Formatters for Aeronautical messages.

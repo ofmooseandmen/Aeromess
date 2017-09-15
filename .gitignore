@@ -4,3 +4,4 @@ cabal.project.local
 cabal.sandbox.config
 *.pdf
 *.DS_Store
+*.tix

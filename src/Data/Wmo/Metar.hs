@@ -65,6 +65,7 @@ data VisibilityTendency
 -- | Visibility distance in appropriate unit.
 data VisibilityDistance
     = VisibilityDistanceMetre Int -- ^ metre, standard unit.
+    | VisibilityDistanceFeet Int -- ^ feet, used by FAA for RVR
     | VisibilityDistanceMile { unit :: Maybe Int -- ^ mile, formally statute mile, used by US/Canada.
                             ,  fraction :: Maybe (Int, Int) -- ^ mile fraction
                              }
@@ -303,6 +304,11 @@ rvrParser = do
             Just 'M' -> return (Just Lower)
             Just 'P' -> return (Just Higher)
             _ -> return Nothing
+    _d <- natural 4
+    u <- optional (string "FT")
+    d <- case u of
+        Just "FT" -> return (VisibilityDistanceFeet _d)
+        _ -> return (VisibilityDistanceMetre (100 * _d))
     -- TODO parse distance: 4 digit, if followed by FT -> Feet otherwise Metre
     _t <- optional (oneOf "UDN")
     t <-
@@ -312,7 +318,7 @@ rvrParser = do
             Just 'N' -> return (Just NoChange)
             _ -> return Nothing
     _ <- space
-    return (RunwayVisualRange r (VisibilityDistanceMetre 0) o t)
+    return (RunwayVisualRange r d o t)
 
 -- | parser of a list of 'RunwayVisualRange'.
 rvrsParser :: Parser [RunwayVisualRange]
@@ -331,7 +337,7 @@ compassPointParser = do
         W -> return West
         NW -> return NorthWest
 
--- prevailing visibility on 4 digits in metres
+-- | WMO visibility: prevailing visibility on 4 digits in metres
 -- followed by optionally a space and 4 digits indicating the lowest visibility
 -- followed by optionally the direction for which the lowest visibility has been observed
 -- followed by runway visibility
@@ -347,6 +353,7 @@ wmoVisibilityParser = do
     r <- rvrsParser
     return (Visibility (VisibilityDistanceMetre v) (fmap VisibilityDistanceMetre l) d r)
 
+-- | 'x/ySM' parser.
 mileFractionParser :: Parser (Int, Int)
 mileFractionParser = do
     n <- natural 1
@@ -355,7 +362,7 @@ mileFractionParser = do
     _ <- string "SM"
     return (n, d)
 
--- only prevailing visibility in miles and fraction ending with SM
+-- | FAA visibility: only prevailing visibility in miles and fraction ending with SM
 -- at least mile (1 digit) or fraction (1 digit / 1 digit) present.
 faaVisibilityParser :: Parser Visibility
 faaVisibilityParser = do

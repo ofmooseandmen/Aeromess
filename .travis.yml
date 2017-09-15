@@ -1,8 +1,17 @@
-# Use new container infrastructure to enable caching
+language: haskell
+
+env:
+  - GHCVER=8.0.1 STACK_YAML=stack-travis.yaml
+
+branches:
+  only:
+    - master
+
 sudo: false
 
-# Choose a lightweight base image; we provide our own build tools.
-language: c
+cache:
+  directories:
+    - $HOME/.stack/
 
 # GHC depends on GMP. You can add other dependencies here as well.
 addons:
@@ -25,10 +34,5 @@ script:
 
 # report coverage to coveralls.
 after_script:
-- stack install stack-hpc-coveralls
-- shc Aeromess Aeromess-test
-
-# Caching so the next build will be fast too.
-cache:
-  directories:
-  - $HOME/.stack
+- travis_retry curl -L https://github.com/rubik/stack-hpc-coveralls/releases/download/v0.0.4.0/shc-linux-x64-$GHCVER.tar.bz2 | tar -xj
+- ./shc Aeromess Aeromess-test

@@ -12,7 +12,7 @@ spec =
         it "parses an ARR message containing only the mandatory fields" $
             parse "(ARR-CSA406-LHBP0800-LKPR0913)" `shouldBe`
             Right
-                (ArrivalMessage
+                (Arr (ArrivalContent
                      (mkAircraftIdentification' "CSA406")
                      Nothing
                      (mkAerodrome' "LHBP")
@@ -20,11 +20,11 @@ spec =
                      Nothing
                      (mkAerodrome' "LKPR")
                      (mkHhmm' 9 13)
-                     Nothing)
+                     Nothing))
         it "parses an ARR message containing the SSR mode and code" $
             parse "(ARR-SAS2000/A1001-ESMS0800-ESGG0905)" `shouldBe`
             Right
-                (ArrivalMessage
+                (Arr (ArrivalContent
                      (mkAircraftIdentification' "SAS2000")
                      (Just (mkSsrCode' "1001"))
                      (mkAerodrome' "ESMS")
@@ -32,11 +32,11 @@ spec =
                      Nothing
                      (mkAerodrome' "ESGG")
                      (mkHhmm' 9 5)
-                     Nothing)
+                     Nothing))
         it "parses an ARR message indicating diversionary landing" $
             parse "(ARR-AFR154-LFPO0803-ELLX-LFJL0920)" `shouldBe`
             Right
-                (ArrivalMessage
+                (Arr (ArrivalContent
                      (mkAircraftIdentification' "AFR154")
                      Nothing
                      (mkAerodrome' "LFPO")
@@ -44,11 +44,11 @@ spec =
                      (Just (mkAerodrome' "ELLX"))
                      (mkAerodrome' "LFJL")
                      (mkHhmm' 9 20)
-                     Nothing)
+                     Nothing))
         it "parses an ARR message containing ADAR ZZZZ and the name of the destination" $
             parse "(ARR-AFR154-LFPO0803-ELLX-ZZZZ0920 SOMEWHERE NORTH OF EPINAL)" `shouldBe`
             Right
-                (ArrivalMessage
+                (Arr (ArrivalContent
                      (mkAircraftIdentification' "AFR154")
                      Nothing
                      (mkAerodrome' "LFPO")
@@ -56,4 +56,4 @@ spec =
                      (Just (mkAerodrome' "ELLX"))
                      (mkAerodrome' "ZZZZ")
                      (mkHhmm' 9 20)
-                     (Just (mkFreeText' "SOMEWHERE NORTH OF EPINAL")))
+                     (Just (mkFreeText' "SOMEWHERE NORTH OF EPINAL"))))

@@ -8,6 +8,9 @@
 --
 module Data.Icao.AtsMessage
     ( AtsMessage(..)
+    , ArrivalContent(..)
+    , DepartureContent(..)
+    , DelayContent(..)
     -- re-exported modules
     , module Data.Icao.Lang
     , module Data.Icao.Location
@@ -51,40 +54,52 @@ import Data.Icao.SupplementaryInformation
 import Data.Icao.Time
 import Data.Maybe ()
 
--- | An ICAO 4444 ATS message.
+-- | Arrival message content.
+-- An arrival message shall be transmitted:
+-- upon reception of an arrival report by the ATS unit serving the arrival aerodrome,
+-- or
+-- when a controlled flight which has experienced failure of two-way communication
+-- has landed, by the aerodrome control tower at the arrival aerodrome.
+data ArrivalContent = ArrivalContent
+    { arrAircraftIndentification :: F7.AircraftIdentification -- ^ aircraft identification.
+    , arrSsrCode :: Maybe F7.SsrCode -- ^ SSR code.
+    , arrAdep :: Aerodrome -- ^ aerodrome of departure.
+    , arrEobt :: Hhmm -- ^ estimated off-block time.
+    , arrAdes :: Maybe Aerodrome -- ^ aerodrome of arrival, only in case of a diversionary landing.
+    , arrAdar :: Aerodrome -- ^actual aerodrome of arrival.
+    , arrAta :: Hhmm -- ^ actual time of arrival.
+    , arrAdarName :: Maybe FreeText -- ^ name of arrival aerodrome, if 'adar' is 'ZZZZ'.
+    } deriving (Eq, Show)
+
+-- | Departure message content.
+-- A departure message shall be transmitted by the ATS unit serving the
+-- departure aerodrome to all recipients of basic flight plan data.
+data DepartureContent = DepartureContent
+    { depAircraftIndentification :: F7.AircraftIdentification -- ^ aircraft identification.
+    , depSsrCode :: Maybe F7.SsrCode -- ^ SSR code.
+    , depAdep :: Aerodrome -- ^ aerodrome of departure.
+    , depAtd :: Hhmm -- ^ actual time of departure.
+    , depAdes :: Aerodrome -- ^ aerodrome of arrival.
+    , depOtherInformation :: OtherInformation -- ^ other information.
+    } deriving (Eq, Show)
+
+-- | Delay message content.
+-- A delay message shall be transmitted when the departure of an aircraft, for which basic flight plan data has been sent,
+-- is delayed by more than 30 minutes after the estimated off-block time contained in the basic flight plan data.
+data DelayContent = DelayContent
+    { dlaAircraftIndentification :: F7.AircraftIdentification -- ^ aircraft identification.
+    , dlaSsrCode :: Maybe F7.SsrCode -- ^ SSR code.
+    , dlaAdep :: Aerodrome -- ^ aerodrome of departure.
+    , dlaEobt :: Hhmm -- ^ revised estimated off-block time.
+    , dlaAdes :: Aerodrome -- ^ aerodrome of arrival.
+    , dlaOtherInformation :: OtherInformation -- ^ other information.
+    } deriving (Eq, Show)
+
+-- | ICAO 4444 ATS message.
 data AtsMessage
-    -- | Arrival message transmitted:
-    -- upon reception of an arrival report by the ATS unit serving the arrival aerodrome,
-    -- or
-    -- when a controlled flight which has experienced failure of two-way communication
-    -- has landed, by the aerodrome control tower at the arrival aerodrome.
-    = ArrivalMessage { aircraftIndentification :: F7.AircraftIdentification -- ^ aircraft identification.
-                     , ssrCode :: Maybe F7.SsrCode -- ^ SSR code.
-                     , adep :: Aerodrome -- ^ aerodrome of departure.
-                     , eobt :: Hhmm -- ^ estimated off-block time.
-                     , originalAdes :: Maybe Aerodrome -- ^ aerodrome of arrival, only in case of a diversionary landing.
-                     , adar :: Aerodrome -- ^actual aerodrome of arrival.
-                     , ata :: Hhmm -- ^ actual time of arrival.
-                     , adarName :: Maybe FreeText -- ^ name of arrival aerodrome, if 'adar' is 'ZZZZ'.
-                      }
-    -- | Departure message transmitted by the ATS unit serving the
-    -- departure aerodrome to all recipients of basic flight plan data.
-    | DepartureMessage { aircraftIndentification :: F7.AircraftIdentification -- ^ aircraft identification.
-                       , ssrCode :: Maybe F7.SsrCode -- ^ SSR code.
-                       , adep :: Aerodrome -- ^ aerodrome of departure.
-                       , atd :: Hhmm -- ^ actual time of departure.
-                       , ades :: Aerodrome -- ^ aerodrome of arrival.
-                       , otherInformation :: OtherInformation -- ^ other information.
-                        }
-    -- | Delay message transmiitted when the departure of an aircraft, for which basic flight plan data has been sent,
-    -- is delayed by more than 30 minutes after the estimated off-block time contained in the basic flight plan data.
-    | DelayMessage { aircraftIndentification :: F7.AircraftIdentification -- ^ aircraft identification.
-                   , ssrCode :: Maybe F7.SsrCode -- ^ SSR code.
-                   , adep :: Aerodrome -- ^ aerodrome of departure.
-                   , eobt :: Hhmm -- ^ revised estimated off-block time.
-                   , ades :: Aerodrome -- ^ aerodrome of arrival.
-                   , otherInformation :: OtherInformation -- ^ other information.
-                    }
+    = Arr ArrivalContent -- ^ Arrival message.
+    | Dep DepartureContent -- ^ Departure message.
+    | Dla DelayContent -- ^ Delay message.
     deriving (Eq, Show)
 
 -- | 'ArrivalMessage' parser.
@@ -92,38 +107,42 @@ arrParser :: Parser AtsMessage
 arrParser = do
     f7 <- F7.parser
     f13 <- F13.parser
-    orginalAdes <- optional (try F16.adesParser)
+    ades <- optional (try F16.adesParser)
     f17 <- F17.parser
-    return
-        (ArrivalMessage
+    return (Arr
+        (ArrivalContent
              (F7.aircraftIdentification f7)
              (F7.ssrCode f7)
              (F13.adep f13)
              (F13.time f13)
-             orginalAdes
+             ades
              (F17.adar f17)
              (F17.ata f17)
-             (F17.adarName f17))
+             (F17.adarName f17)))
 
 -- | common parser for DEP and DLA messages.
-depParser' ::
-       (F7.AircraftIdentification -> Maybe F7.SsrCode -> Aerodrome -> Hhmm -> Aerodrome -> OtherInformation -> AtsMessage)
-    -> Parser AtsMessage
-depParser' f = do
+depParser' :: Parser (F7.AircraftIdentification, Maybe F7.SsrCode, Aerodrome, Hhmm, Aerodrome, OtherInformation)
+depParser' = do
     f7 <- F7.parser
     f13 <- F13.parser
     f16Ades <- F16.adesParser
     f18 <- F18.parser
     return
-        (f (F7.aircraftIdentification f7) (F7.ssrCode f7) (F13.adep f13) (F13.time f13) f16Ades f18)
+        ((F7.aircraftIdentification f7), (F7.ssrCode f7), (F13.adep f13), (F13.time f13), f16Ades, f18)
 
 -- | 'DepartureMessage' parser.
 depParser :: Parser AtsMessage
-depParser = depParser' DepartureMessage
+depParser = do
+    c <- depParser'
+    let (ai, sc, d, t, s, o) = c
+    return (Dep (DepartureContent ai sc d t s o))
 
 -- | 'DelayMessage' parser.
 dlaParser :: Parser AtsMessage
-dlaParser = depParser' DelayMessage
+dlaParser = do
+    c <- depParser'
+    let (ai, sc, d, t, s, o) = c
+    return (Dla (DelayContent ai sc d t s o))
 
 -- | ATS message content parser - i.e. everything between '(' and ')'
 contentParser :: Parser AtsMessage

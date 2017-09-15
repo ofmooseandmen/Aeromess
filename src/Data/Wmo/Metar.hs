@@ -157,17 +157,18 @@ newtype CloudHeight =
     CloudHeight Int
     deriving (Eq, Show)
 
+data CloudAmount = CloudAmount
+    { height :: CloudHeight -- ^ height of cloud base
+    , cType  :: Maybe CloudType -- ^ type of clouds if relevant
+    } deriving (Eq, Show)
+
 -- | Clouds group data.
 data Clouds
-    = Few { height :: CloudHeight
-          , cType :: Maybe CloudType }
-    | Scattered { height :: CloudHeight
-                , cType :: Maybe CloudType }
-    | Broken { height :: CloudHeight
-             , cType :: Maybe CloudType }
-    | Overcast { height :: CloudHeight
-               , cType :: Maybe CloudType }
-    | Obscured { verticalVisibility :: CloudHeight }
+    = Few CloudAmount -- ^ few amount of clouds
+    | Scattered CloudAmount -- ^ Scattered amount of clouds
+    | Broken CloudAmount -- ^ broken amount of clouds
+    | Overcast CloudAmount -- ^ overcast amount of clouds
+    | Obscured CloudHeight -- ^ sky obscured, gives vertical visibility
     | SkyClear
     | NoCloudBelow1500
     | NoCloudBelow3600 -- ^ used in automatic observations.
@@ -175,8 +176,8 @@ data Clouds
 
 -- | Mean sea level pressure.
 data Pressure
-    = Hpa Int -- ^ in hecto Pascals (standard)
-    | InHg Int -- ^ in inches of mercury, tens, units, tenths, and hundredths (US)
+    = Hpa Int -- ^ in hecto Pascals (standard).
+    | InHg Int -- ^ in inches of mercury, tens, units, tenths, and hundredths (US).
     deriving (Eq, Show)
 
 -- | METAR: an aerodrome routine meteorological report.
@@ -200,18 +201,18 @@ data Metar = Metar
 
 -- | Speed unit.
 data SpeedUnit
-    = KT -- ^ knots
-    | MPS -- meters per second
-    | KMH -- kilometers per hour
+    = KT -- ^ knots.
+    | MPS -- meters per second.
+    | KMH -- kilometers per hour.
     deriving (Bounded, Enum, Eq, Read, Show)
 
 -- | Mean sea level pressure unit.
 data PressureUnit
-    = Q -- ^ hPa (standard)
-    | A -- ^ inches of mercury (US)
+    = Q -- ^ hPa (standard).
+    | A -- ^ inches of mercury (US).
     deriving (Bounded, Enum, Eq, Read, Show)
 
--- | 'WindDirection' parser
+-- | 'WindDirection' parser.
 wdParser :: Parser WindDirection
 wdParser = natural 3 >>= mkWindDirection
 
@@ -239,7 +240,7 @@ calmParser = do
     _ <- enumeration :: Parser SpeedUnit
     return Calm
 
--- | 'WindSpeed' from given speed and unit
+-- | 'WindSpeed' from given speed and unit.
 speedFrom :: Int -> SpeedUnit -> WindSpeed
 speedFrom s KT = Kt s
 speedFrom s MPS = Mps s
@@ -282,19 +283,24 @@ vwcParser = do
 parser :: Parser Metar
 parser = do
     rt <- enumeration :: Parser Type
-    -- some format allow COR here...
+    -- WMO allow COR here
     cor1 <- fmap isJust (optional (try (string " COR")))
     _ <- space
+    -- station.
     st <- aerodromeParser
+    -- WMO allows NIL or AUTO, some other organisation also allow COR
     ms <- fmap isJust (optional (try (string " NIL")))
     au <- fmap isJust (optional (try (string " AUTO")))
     cor2 <- fmap isJust (optional (try (string " COR")))
     _ <- space
+    -- day and time
     dt <- dayTimeParser
     _ <- char 'Z'
     _ <- space
+    -- wind
     wd <- calmParser <|> windParser
     _ <- space
+    -- cavok or visibility, weather and clouds
     vwc <- vwcParser
     let ok = isNothing vwc
     let (vs, we, cl) = fromMaybe (Nothing, [], []) vwc

@@ -2,16 +2,16 @@
 -- Provides data types and functions pertaining to locations
 -- in accordance with the ICAO 4444 edition 2016 standard.
 module Data.Icao.Location
-    (
-    -- * Data
+    ( -- * Data
       Aerodrome
     , Bearing
     , Distance
     , Latitude
     , Longitude
     , PointNameCode
-    , SignificantPoint(CodedDesignator, Position, BearingDistance,
-                 latitude, longitude, reference, bearing, distance)
+    , GeographicPosition(..)
+    , BearingDistancePosition(..)
+    , SignificantPoint(CodedDesignator, Position, BearingDistance)
     -- * Parsers
     , aerodromeParser
     , significantPointParser
@@ -54,22 +54,32 @@ newtype Longitude =
     Longitude Float
     deriving (Eq, Show)
 
--- | 5 letters pronounceable ‘name-code’ (5LNC) to designate q Significant Point.
+-- | 5 letters pronounceable 'name-code' (5LNC) to designate a Significant Point.
 newtype PointNameCode =
     PointNameCode String
     deriving (Eq, Show)
+
+-- | Position expressed by the decimal latitude and longitude.
+data GeographicPosition = GeographicPosition
+    { latitude :: Latitude
+    , longitude :: Longitude
+    } deriving (Eq, Show)
+
+-- | Position expressed as a bearing and distance from a reference point.
+data BearingDistancePosition = BearingDistancePosition
+    { reference :: PointNameCode -- ^ 'name-code' of the reference point.
+    , bearing :: Bearing -- ^ Bearing from the reference point
+    , distance :: Distance -- ^ Distance from the reference point
+    } deriving (Eq, Show)
 
 -- | a significant point
 data SignificantPoint
     -- | Point coded designator (e.g. 'RASMU'), 2 to 5 characters.
     = CodedDesignator PointNameCode
     -- | Point Position; latitude and longitude in decimal degrees.
-    | Position { latitude :: Latitude
-               , longitude :: Longitude }
+    | Position GeographicPosition
     -- | Bearing and distance from a reference point, bearing in degrees, distance in nautical miles.
-    | BearingDistance { reference :: PointNameCode
-                      , bearing :: Bearing
-                      , distance :: Distance }
+    | BearingDistance BearingDistancePosition
     deriving (Eq, Show)
 
 -- | 'Aerodrome' Parser.
@@ -111,7 +121,7 @@ mkBearingDistance n b d = do
     ref <- mkPointNameCode n
     br <- mkBearing b
     di <- mkDistance d
-    return (BearingDistance ref br di)
+    return (BearingDistance (BearingDistancePosition ref br di))
 
 -- | 'Position' 'SignificantPoint' smart constructor. Fails if the given latitude
 -- and/or longitude are not valid.
@@ -119,7 +129,7 @@ mkPosition :: (Monad m) => Float -> Float -> m SignificantPoint
 mkPosition lat long = do
     la <- mkLatitude lat
     lo <- mkLongitude long
-    return (Position la lo)
+    return (Position (GeographicPosition la lo))
 
 mkBearing :: (Monad m) => Int -> m Bearing
 mkBearing b

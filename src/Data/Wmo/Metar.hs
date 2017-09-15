@@ -1,10 +1,12 @@
 -- | This module provides tools to parse and format METAR.
--- METAR is a format for reporting weather information.
+-- METARs are aerodrome routine meteorological reports.
 -- This module is compliant with WMO Technical Regulations - Annex II, but
--- best effort have been made to cater for small deviations (mostly US and Canadian METAR).
+-- best efforts have been made to cater for small deviations mostly for US and Canadian
+-- METARs as described in the FAA Aeronautical Information Manual.
 --
 -- == /Relevant links/
 -- - <http://www.wmo.int/pages/prog/www/WMOCodes/WMO306_vI1/Publications/2016update/WMO306_vI1_en_2011UP2016.pdf WMO Technical Regulations - Annex II>
+-- - <https://www.faa.gov/air_traffic/publications/media/aim.pdf>
 -- - <https://en.wikipedia.org/wiki/METAR METAR on Wikipedia>
 -- - <http://sto.iki.fi/metar>
 --
@@ -59,9 +61,10 @@ data VisibilityTendency
     | NoChange
     deriving (Eq, Show)
 
--- | Visibility distance in meters.
-newtype VisibilityDistance =
-    VisibilityDistance Int
+-- | Visibility distance in appropriate unit.
+data VisibilityDistance
+    = Meter Int -- ^ meter, standard unit.
+    | Mile Int -- ^ mile, formally statute mile, used by US/Canada.
     deriving (Eq, Show)
 
 -- | Runway visual range data.
@@ -159,7 +162,7 @@ newtype CloudHeight =
 
 data CloudAmount = CloudAmount
     { height :: CloudHeight -- ^ height of cloud base
-    , cType  :: Maybe CloudType -- ^ type of clouds if relevant
+    , cType :: Maybe CloudType -- ^ type of clouds if relevant
     } deriving (Eq, Show)
 
 -- | Clouds group data.
@@ -247,6 +250,10 @@ speedFrom s MPS = Mps s
 speedFrom s KMH = Kmh s
 
 -- | 'Wind' parser.
+-- wind direction on 3 digits, degrees
+-- speed on 2 digits
+-- optionally gust speed on 2 digits
+-- speed unit.
 windParser :: Parser Wind
 windParser = do
     d <- windDirectionParser
@@ -256,11 +263,25 @@ windParser = do
     v <- optional (try variableDirectionParser)
     return (Wind d (speedFrom s u) (fmap (`speedFrom` u) g) v)
 
--- | 'Visibility' parser.
-visibilityParser :: Parser Visibility
-visibilityParser = do
+-- horizontal visibility on 4 digits in meters
+-- followed by optionally a space and 4 digits indicating the variations
+-- followed by optionally the significant direction
+-- the above looks like: VVVV or VVVVD or VVVV VVVVD.
+-- followed by runway visibility
+wmoVisibilityParser :: Parser Visibility
+wmoVisibilityParser = do
     v <- natural 4
-    return (Visibility (VisibilityDistance v) [] Nothing [])
+    return (Visibility (Meter v) [] Nothing [])
+
+faaVisibilityParser :: Parser Visibility
+faaVisibilityParser = do
+    v <- natural 4
+    return (Visibility (Mile v) [] Nothing [])
+
+-- | 'Visibility' parser.
+-- FAA deviates from the WMO standard here.
+visibilityParser :: Parser Visibility
+visibilityParser = try wmoVisibilityParser <|> faaVisibilityParser
 
 -- | 'WindDirection' smart constructor. Fails if given integer is outside [0 .. 359].
 mkWindDirection :: (Monad m) => Int -> m WindDirection
@@ -297,7 +318,7 @@ parser = do
     dt <- dayTimeParser
     _ <- char 'Z'
     _ <- space
-    -- wind
+    -- wind, either all 00000 (calm) or data
     wd <- calmParser <|> windParser
     _ <- space
     -- cavok or visibility, weather and clouds

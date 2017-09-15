@@ -21,7 +21,7 @@ spec =
              (mkDayTime' 13 12 50)
              (Wind (Just (WindDirection 180)) (Kt 16) Nothing Nothing)
              False
-             (Just (Visibility (VisibilityDistance 9999) [] Nothing []))
+             (Just (Visibility (Meter 9999) [] Nothing []))
              []
              []
              Nothing

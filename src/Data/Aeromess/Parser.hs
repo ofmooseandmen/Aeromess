@@ -6,7 +6,6 @@ module Data.Aeromess.Parser
     ( Error(..)
     , Parser
     , (<|>)
-    , anyString
     , between
     , char
     , choice
@@ -25,6 +24,7 @@ module Data.Aeromess.Parser
     , some
     , space
     , string
+    , stringTill
     , try
     , unexpected
     , word
@@ -52,10 +52,6 @@ type Parser a = P.ParsecT String () Identity a
 -- | Tries to apply @p1@, if it fails applies @p2@.
 (<|>) :: Parser a -> Parser a -> Parser a
 p1 <|> p2 = mplus p1 p2
-
--- | Parses any string
-anyString :: Parser String
-anyString = some P.anyChar
 
 -- | Parses @p@ between given characters.
 between :: Parser Char -> Parser Char -> Parser a -> Parser a
@@ -96,6 +92,10 @@ lookAhead = P.lookAhead
 many :: Parser a -> Parser [a]
 many = P.many
 
+-- | Parses a natural number (non-negative integer) of n digits. Returns the parsed number
+natural :: Int -> Parser Int
+natural n = fmap read (P.count n P.digit)
+
 -- | Dual of 'oneOf'
 noneOf :: String -> Parser Char
 noneOf = P.noneOf
@@ -117,10 +117,6 @@ optional = P.optionMaybe
 runParser :: Parser a -> String -> Either Error a
 runParser p s = mapLeft err (P.parse p "" s)
 
--- | Parses a natural number (non-negative integer) of n digits. Returns the parsed number
-natural :: Int -> Parser Int
-natural n = fmap read (P.count n P.digit)
-
 -- | Parses a '/' character
 slash :: Parser Char
 slash = char '/'
@@ -136,6 +132,10 @@ space = P.space
 -- | Parses the given string.
 string :: String -> Parser String
 string = C.string
+
+-- | Parses any number of characters until given char
+stringTill :: Char -> Parser String
+stringTill c = P.manyTill C.anyChar (try (string [c]))
 
 -- | The parser @@try p@ behaves like parser @p@,
 -- except that it pretends that it hasn't consumed any input when an error occurs.

@@ -297,8 +297,8 @@ windParser = do
 -- followed by optionally tendency
 rvrParser :: Parser RunwayVisualRange
 rvrParser = do
-    r <- between (char 'R') slash anyString >>= mkRunwayDesignator
-    _o <- optional (char 'M') <|> optional (char 'P')
+    r <- string "R" >> stringTill '/' >>= mkRunwayDesignator
+    _o <- optional (oneOf "MP")
     o <-
         case _o of
             Just 'M' -> return (Just Lower)
@@ -307,9 +307,8 @@ rvrParser = do
     _d <- natural 4
     u <- optional (string "FT")
     d <- case u of
-        Just "FT" -> return (VisibilityDistanceFeet _d)
-        _ -> return (VisibilityDistanceMetre (100 * _d))
-    -- TODO parse distance: 4 digit, if followed by FT -> Feet otherwise Metre
+        Just "FT" -> return (VisibilityDistanceFeet (100 * _d))
+        _ -> return (VisibilityDistanceMetre _d)
     _t <- optional (oneOf "UDN")
     t <-
         case _t of
@@ -393,9 +392,9 @@ mkRunwayDesignator
     :: (Monad m)
     => String -> m RunwayDesignator
 mkRunwayDesignator s
-    | length s /= 2 || length s /= 3 = fail ("invalid runway designator=" ++ s)
+    | length s /= 2 && length s /= 3 = fail ("invalid runway designator=" ++ s)
     | not (all isDigit (take 2 s)) = fail ("invalid runway designator=" ++ s)
-    | length s == 3 && (last s /= 'C' || last s /= 'R' || last s /= 'L') =
+    | length s == 3 && (last s /= 'C' && last s /= 'R' && last s /= 'L') =
         fail ("invalid runway designator=" ++ s)
     | otherwise = return (RunwayDesignator s)
 
@@ -432,6 +431,7 @@ parser = do
     vwc <- vwcParser
     let ok = isNothing vwc
     let (vs, we, cl) = fromMaybe (Nothing, [], []) vwc
+    -- TODO, once everything is parsed, check for '=' or end of line.
     return (Metar rt (cor1 || cor2) au ms st dt wd ok vs we cl Nothing Nothing Nothing Nothing)
 
 -- | Parses the given textual representation of a 'Metar'.

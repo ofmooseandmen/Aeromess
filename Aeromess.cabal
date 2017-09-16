@@ -3,8 +3,8 @@ version:             0.1.0.0
 synopsis:            Aeronautical Messages parsers and formatters
 description:
   Aeromess provides parsers and formatters for a wide range of
-  aeronautical messages, such as ICAO/AIDC/OLDI ATS messages, WMO and FAA
-  METARs and TAFs, ICAO NOTAMs
+  aeronautical messages, such as ATS messages, METARs, TAFs, NOTAMs, etc...
+  All parsers comply with the relevant standards (ICAO, WMO, FAA, Eurocontrol).
 
 homepage:            https://github.com/ofmooseandmen/Aeromess#readme
 license:             BSD3

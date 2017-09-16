@@ -49,9 +49,9 @@ spec =
                      Nothing
                      Nothing)
         it
-            "parses 'METAR LBBG 041600Z 12012MPS 090V150 1400 R04/P1500N R22/P1500U +SN BKN022 OVC050 M04/M07 Q1020 NOSIG 8849//91'" $
+            "parses 'METAR LBBG 041600Z 12012MPS 090V150 1400 R04/P1500N R22/M1500U +SN BKN022 OVC050 M04/M07 Q1020 NOSIG 8849//91'" $
             parse
-                "METAR LBBG 041600Z 12012MPS 090V150 1400 R04/P1500N R22/P1500U +SN BKN022 OVC050 M04/M07 Q1020 NOSIG 8849//91" `shouldBe`
+                "METAR LBBG 041600Z 12012MPS 090V150 1400 R04/P1500N R22/M0050U +SN BKN022 OVC050 M04/M07 Q1020 NOSIG 8849//91" `shouldBe`
             Right
                 (Metar
                      METAR
@@ -78,8 +78,8 @@ spec =
                                       (Just NoChange))
                                , (RunwayVisualRange
                                       (RunwayDesignator "22")
-                                      (VisibilityDistanceMetre 1500)
-                                      (Just Higher)
+                                      (VisibilityDistanceMetre 50)
+                                      (Just Lower)
                                       (Just Up))
                                ]))
                      []

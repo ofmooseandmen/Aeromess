@@ -48,7 +48,7 @@ data WindSpeed
 data Wind
     = Calm
     | Wind { direction :: Maybe WindDirection -- ^ mean true direction in degrees rounded off to the nearest 10 degrees
-                                              -- from which the wind is blowing, when absent the direction is variable
+                                              -- from which the wind is blowing, when absent the direction is variable.
           ,  speed :: WindSpeed -- ^ mean speed of the wind over the 10-minute period immediately preceding the observation.
           ,  gust :: Maybe WindSpeed -- ^ maximum gust wind speed if relevant.
           ,  variation :: Maybe VariableDirection -- ^ variable wind direction if relevant.
@@ -65,9 +65,9 @@ data VisibilityTendency
 -- | Visibility distance in appropriate unit.
 data VisibilityDistance
     = VisibilityDistanceMetre Int -- ^ metre, standard unit.
-    | VisibilityDistanceFeet Int -- ^ feet, used by FAA for RVR
+    | VisibilityDistanceFeet Int -- ^ feet, used by FAA for RVR.
     | VisibilityDistanceMile { unit :: Maybe Int -- ^ mile, formally statute mile, used by US/Canada.
-                            ,  fraction :: Maybe (Int, Int) -- ^ mile fraction
+                            ,  fraction :: Maybe (Int, Int) -- ^ mile fraction.
                              }
     deriving (Eq, Show)
 
@@ -84,7 +84,7 @@ data ExtrmeRvr
 
 -- | Runway visual range data.
 data RunwayVisualRange = RunwayVisualRange
-    { designator :: RunwayDesignator -- ^ runway designator
+    { designator :: RunwayDesignator -- ^ runway designator.
     , meanVisibility :: VisibilityDistance -- ^ mean visibility in metre.
     , isOutsideMeasuringRange :: Maybe ExtrmeRvr -- ^ present only if the RVR values are outside the measuring range of the observing system.
     , visibilityTendency :: Maybe VisibilityTendency -- ^ visibility tendency.
@@ -107,7 +107,7 @@ data Visibility = Visibility
     { prevailing :: VisibilityDistance -- ^ prevailing horizontal visibility in metres, 9999 indicates a visibility over 10 km.
     , lowest :: Maybe VisibilityDistance -- ^ lowest visibility if reported.
     , lowestDirection :: Maybe CompassPoint -- ^ lowest visibility.
-    , runways :: [RunwayVisualRange] -- ^ visual range for each runway
+    , runways :: [RunwayVisualRange] -- ^ visual range for each runway.
     } deriving (Eq, Show)
 
 -- | Weather qualifier.
@@ -176,8 +176,8 @@ newtype CloudHeight =
     deriving (Eq, Show)
 
 data CloudAmount = CloudAmount
-    { height :: CloudHeight -- ^ height of cloud base
-    , cType :: Maybe CloudType -- ^ type of clouds if relevant
+    { height :: CloudHeight -- ^ height of cloud base.
+    , cType :: Maybe CloudType -- ^ type of clouds if relevant.
     } deriving (Eq, Show)
 
 -- | Clouds group data.
@@ -198,12 +198,17 @@ data Pressure
     | InHg Int -- ^ in inches of mercury, tens, units, tenths, and hundredths (US).
     deriving (Eq, Show)
 
+-- | METAR modifiers.
+data Modifiers = Modifiers
+  { corrected :: Bool -- ^ whether the report was corrected.
+  , auto :: Bool -- ^ whether the report contains fully automated observations without human intervention.
+  , missed :: Bool -- ^ whether the report corresponds to a missing report.
+  } deriving (Eq, Show)
+
 -- | METAR: an aerodrome routine meteorological report.
 data Metar = Metar
     { reportType :: Type -- ^ type of the report.
-    , corrected :: Bool -- ^ whether the report was corrected.
-    , auto :: Bool -- ^ whether the report contains fully automated observations without human intervention.
-    , missed :: Bool -- ^ whether the report corresponds to a missing report.
+    , modifiers :: Modifiers -- ^ modifiers (cor, auto, nil).
     , station :: Aerodrome -- ^ ICAO code for the observing station (an aerodrome).
     , when :: DayTime -- ^ when the observation was made.
     , wind :: Wind -- ^ wind related observations.
@@ -216,6 +221,62 @@ data Metar = Metar
     , pressure :: Maybe Pressure -- ^ mean sea level pressure (“QNH”).
     , remarks :: Maybe FreeText -- ^ METAR components and miscellaneous abbreviations.
     } deriving (Eq, Show)
+
+-- | All 'Modifiers' 'False'.
+noModifiers :: Modifiers
+noModifiers = Modifiers False False False
+
+-- | 'RunwayDesignator' smart constructor. Fails if given string is not a valid designator.
+mkRunwayDesignator
+    :: (Monad m)
+    => String -> m RunwayDesignator
+mkRunwayDesignator s
+    | length s /= 2 && length s /= 3 = fail ("invalid runway designator=" ++ s)
+    | not (all isDigit (take 2 s)) = fail ("invalid runway designator=" ++ s)
+    | length s == 3 && (last s /= 'C' && last s /= 'R' && last s /= 'L') =
+        fail ("invalid runway designator=" ++ s)
+    | otherwise = return (RunwayDesignator s)
+
+-- | 'WindDirection' smart constructor. Fails if given integer is outside [0 .. 359].
+mkWindDirection
+    :: (Monad m)
+    => Int -> m WindDirection
+mkWindDirection n
+    | n < 0 || n > 359 = fail ("invalid degrees=" ++ show n)
+    | otherwise = return (WindDirection n)
+
+-- | 'Metar' parser.
+parser :: Parser Metar
+parser = do
+    rt <- enumeration :: Parser Type
+    -- WMO allow COR here
+    cor1 <- fmap isJust (optional (try (string " COR")))
+    _ <- space
+    -- station.
+    st <- aerodromeParser
+    -- WMO allows NIL or AUTO, some other organisations also allow COR
+    ms <- fmap isJust (optional (try (string " NIL")))
+    au <- fmap isJust (optional (try (string " AUTO")))
+    cor2 <- fmap isJust (optional (try (string " COR")))
+    _ <- space
+    -- day and time
+    dt <- dayTimeParser
+    _ <- char 'Z'
+    _ <- space
+    -- wind, either all 00000 (calm) or data
+    wd <- calmParser <|> windParser
+    _ <- space
+    -- cavok or visibility, weather and clouds
+    vwc <- vwcParser
+    let ok = isNothing vwc
+    let (vs, we, cl) = fromMaybe (Nothing, [], []) vwc
+    -- TODO, once everything is parsed, check for '=' or end of line.
+    return (Metar rt (Modifiers (cor1 || cor2) au ms) st dt wd ok vs we cl Nothing Nothing Nothing Nothing)
+
+-- | Parses the given textual representation of a 'Metar'.
+-- return either an 'Error' ('Left') or the parsed 'Metar' ('Right').
+parse :: String -> Either Error Metar
+parse = runParser parser
 
 -- | Speed unit.
 data SpeedUnit
@@ -387,55 +448,3 @@ vwcParser = do
         else do
             vs <- visibilityParser
             return (Just (Just vs, [], []))
-
--- | 'RunwayDesignator' smart constructor. Fails if given string is not a valid designator.
-mkRunwayDesignator
-    :: (Monad m)
-    => String -> m RunwayDesignator
-mkRunwayDesignator s
-    | length s /= 2 && length s /= 3 = fail ("invalid runway designator=" ++ s)
-    | not (all isDigit (take 2 s)) = fail ("invalid runway designator=" ++ s)
-    | length s == 3 && (last s /= 'C' && last s /= 'R' && last s /= 'L') =
-        fail ("invalid runway designator=" ++ s)
-    | otherwise = return (RunwayDesignator s)
-
--- | 'WindDirection' smart constructor. Fails if given integer is outside [0 .. 359].
-mkWindDirection
-    :: (Monad m)
-    => Int -> m WindDirection
-mkWindDirection n
-    | n < 0 || n > 359 = fail ("invalid degrees=" ++ show n)
-    | otherwise = return (WindDirection n)
-
--- | 'Metar' parser.
-parser :: Parser Metar
-parser = do
-    rt <- enumeration :: Parser Type
-    -- WMO allow COR here
-    cor1 <- fmap isJust (optional (try (string " COR")))
-    _ <- space
-    -- station.
-    st <- aerodromeParser
-    -- WMO allows NIL or AUTO, some other organisations also allow COR
-    ms <- fmap isJust (optional (try (string " NIL")))
-    au <- fmap isJust (optional (try (string " AUTO")))
-    cor2 <- fmap isJust (optional (try (string " COR")))
-    _ <- space
-    -- day and time
-    dt <- dayTimeParser
-    _ <- char 'Z'
-    _ <- space
-    -- wind, either all 00000 (calm) or data
-    wd <- calmParser <|> windParser
-    _ <- space
-    -- cavok or visibility, weather and clouds
-    vwc <- vwcParser
-    let ok = isNothing vwc
-    let (vs, we, cl) = fromMaybe (Nothing, [], []) vwc
-    -- TODO, once everything is parsed, check for '=' or end of line.
-    return (Metar rt (cor1 || cor2) au ms st dt wd ok vs we cl Nothing Nothing Nothing Nothing)
-
--- | Parses the given textual representation of a 'Metar'.
--- return either an 'Error' ('Left') or the parsed 'Metar' ('Right').
-parse :: String -> Either Error Metar
-parse = runParser parser

@@ -15,9 +15,7 @@ spec =
             Right
                 (Metar
                      METAR
-                     False
-                     False
-                     False
+                     noModifiers
                      (mkAerodrome' "LFPG")
                      (mkDayTime' 15 23 30)
                      (Wind (Just (WindDirection 250)) (WindSpeedKt 3) Nothing Nothing)
@@ -34,9 +32,7 @@ spec =
             Right
                 (Metar
                      METAR
-                     False
-                     False
-                     False
+                     noModifiers
                      (mkAerodrome' "ESMS")
                      (mkDayTime' 13 12 50)
                      (Wind (Just (WindDirection 180)) (WindSpeedKt 16) Nothing Nothing)
@@ -55,9 +51,7 @@ spec =
             Right
                 (Metar
                      METAR
-                     False
-                     False
-                     False
+                     noModifiers
                      (mkAerodrome' "LBBG")
                      (mkDayTime' 4 16 0)
                      (Wind
@@ -71,16 +65,16 @@ spec =
                                (VisibilityDistanceMetre 1400)
                                Nothing
                                Nothing
-                               [ (RunwayVisualRange
-                                      (RunwayDesignator "04")
-                                      (VisibilityDistanceMetre 1500)
-                                      (Just Higher)
-                                      (Just NoChange))
-                               , (RunwayVisualRange
-                                      (RunwayDesignator "22")
-                                      (VisibilityDistanceMetre 50)
-                                      (Just Lower)
-                                      (Just Up))
+                               [ RunwayVisualRange
+                                     (RunwayDesignator "04")
+                                     (VisibilityDistanceMetre 1500)
+                                     (Just Higher)
+                                     (Just NoChange)
+                               , RunwayVisualRange
+                                     (RunwayDesignator "22")
+                                     (VisibilityDistanceMetre 50)
+                                     (Just Lower)
+                                     (Just Up)
                                ]))
                      []
                      []

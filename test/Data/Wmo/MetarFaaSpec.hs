@@ -17,9 +17,7 @@ spec =
             Right
                 (Metar
                      METAR
-                     False
-                     False
-                     False
+                     noModifiers
                      (mkAerodrome' "KJFK")
                      (mkDayTime' 15 11 51)
                      (Wind (Just (WindDirection 250)) (WindSpeedKt 4) Nothing Nothing)
@@ -39,9 +37,7 @@ spec =
             Right
                 (Metar
                      METAR
-                     False
-                     False
-                     False
+                     noModifiers
                      (mkAerodrome' "KJFK")
                      (mkDayTime' 15 11 51)
                      (Wind (Just (WindDirection 250)) (WindSpeedKt 4) Nothing Nothing)

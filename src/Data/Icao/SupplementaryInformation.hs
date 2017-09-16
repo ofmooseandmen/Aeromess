@@ -1,6 +1,6 @@
 -- |
 -- ICAO Field Type 19 - Supplementary information.
--- This field is a collection of switches all optional, use the withXXXX function to
+-- This field is a collection of switches all optional, use the withXXXX functions to
 -- build a new instance starting from 'emptySupplementaryInformation'.
 module Data.Icao.SupplementaryInformation
     (
@@ -15,7 +15,7 @@ module Data.Icao.SupplementaryInformation
     , emptySupplementaryInformation
     , withFuelEndurance
     , withPersonsOnBoard
-    , witAvailableTransmitters
+    , withAvailableTransmitters
     , withSurvivalEquipments
     , withAircraftDescription
     , withLifeJackets
@@ -104,8 +104,8 @@ withPersonsOnBoard :: PersonsOnBoard -> SupplementaryInformation -> Supplementar
 withPersonsOnBoard n si = si {personsOnBoard = Just n}
 
 -- | Sets the available transmitters on board the aircraft.
-witAvailableTransmitters :: [Transmitter] -> SupplementaryInformation -> SupplementaryInformation
-witAvailableTransmitters t si = si {availableTransmitters = t}
+withAvailableTransmitters :: [Transmitter] -> SupplementaryInformation -> SupplementaryInformation
+withAvailableTransmitters t si = si {availableTransmitters = t}
 
 -- | Sets the available survival equipements on board the aircraft.
 withSurvivalEquipments :: [SurvivalEquipment]

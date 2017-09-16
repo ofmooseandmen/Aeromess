@@ -23,7 +23,8 @@ module Data.Icao.Time
 import Data.Aeromess.Parser
 import Data.Either ()
 
--- |'Hhmm' represents a time or duration expressed with hours and minutes only.
+-- |'Hhmm' represents a time or duration expressed with hours and minutes only
+-- in the range 0000 .. 2359.
 data Hhmm = Hhmm
     { hour :: Int
     , minute :: Int

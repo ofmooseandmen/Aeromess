@@ -306,9 +306,10 @@ rvrParser = do
             _ -> return Nothing
     _d <- natural 4
     u <- optional (string "FT")
-    d <- case u of
-        Just "FT" -> return (VisibilityDistanceFeet (100 * _d))
-        _ -> return (VisibilityDistanceMetre _d)
+    d <-
+        case u of
+            Just "FT" -> return (VisibilityDistanceFeet (100 * _d))
+            _ -> return (VisibilityDistanceMetre _d)
     _t <- optional (oneOf "UDN")
     t <-
         case _t of

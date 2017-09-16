@@ -3,7 +3,7 @@
 -- Allows to abstract away the choice of the underlying parser
 -- library (e.g. Parsec or MegaParsec).
 module Data.Aeromess.Parser
-    ( Error(..)
+    ( Error(message, column)
     , Parser
     , (<|>)
     , between

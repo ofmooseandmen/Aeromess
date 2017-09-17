@@ -2,6 +2,7 @@ module Data.Wmo.MetarWmoSpec
     ( spec
     ) where
 
+import Data.Either
 import Data.Icao.Expected
 import Data.Wmo.Metar
 import Test.Hspec
@@ -12,21 +13,23 @@ spec =
     describe "WMO METAR paser" $ do
         it "parses 'LFPG 152330Z 25003KT CAVOK 10/09 Q1012 NOSIG'" $
             parse "METAR LFPG 152330Z 25003KT CAVOK 10/09 Q1012 NOSIG" `shouldBe`
-            Right
-                (Metar
-                     METAR
-                     noModifiers
-                     (mkAerodrome' "LFPG")
-                     (mkDayTime' 15 23 30)
-                     (Wind (Just (WindDirection 250)) (WindSpeedKt 3) Nothing Nothing)
-                     True
-                     Nothing
-                     []
-                     []
-                     Nothing
-                     Nothing
-                     Nothing
-                     Nothing)
+            (metar "ESSA" (14, 13, 50) $ do
+                       m <- withWindDirection 28 >> withWindSpeed 40 Nothing KT >> withWindVariation 50 120
+                       return m) :: Either Error Metar
+                -- (Metar
+                --      METAR
+                --      noModifiers
+                --      (mkAerodrome' "LFPG")
+                --      (mkDayTime' 15 23 30)
+                --      (Wind (Just (WindDirection 250)) (WindSpeedKt 3) Nothing Nothing)
+                --      True
+                --      Nothing
+                --      []
+                --      []
+                --      Nothing
+                --      Nothing
+                --      Nothing
+                --      Nothing)
         it "parses 'METAR ESMS 131250Z 18016KT 9999 -RA BKN008 12/12 Q0988'" $
             parse "METAR ESMS 131250Z 18016KT 9999 -RA BKN008 12/12 Q0988" `shouldBe`
             Right
@@ -58,7 +61,7 @@ spec =
                           (Just (WindDirection 120))
                           (WindSpeedMps 12)
                           Nothing
-                          (Just (VariableDirection (WindDirection 90) (WindDirection 150))))
+                          (Just (VariableWindDirection (WindDirection 90) (WindDirection 150))))
                      False
                      (Just
                           (Visibility

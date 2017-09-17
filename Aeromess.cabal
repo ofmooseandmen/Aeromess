@@ -53,7 +53,6 @@ test-suite Aeromess-test
                      , Data.Icao.LocationSpec
                      , Data.Icao.OtherInformationSpec
                      , Data.Icao.TimeSpec
-                     , Data.Wmo.MetarSpec
                      , Data.Wmo.MetarWmoSpec
                      , Data.Wmo.MetarFaaSpec
   main-is:             Spec.hs

@@ -10,7 +10,56 @@
 -- - <https://en.wikipedia.org/wiki/METAR METAR on Wikipedia>
 -- - <http://sto.iki.fi/metar>
 --
-module Data.Wmo.Metar where
+-- TODO: break module when implementing TAF
+-- TODO: support trend
+--
+module Data.Wmo.Metar
+    (
+    -- re-exported modules
+      module Data.Icao.Location
+    , module Data.Icao.Time
+    -- * Data
+    , Type(..)
+    , SpeedUnit(..)
+    , PressureUnit(..)
+    , WindDirection
+    , VariableWindDirection
+    , WindSpeed
+    , Wind
+    , VisibilityTendency(..)
+    , VisibilityDistance
+    , RunwayDesignator
+    , ExtremeRvr(..)
+    , RunwayVisualRange(..)
+    , CompassPoint(..)
+    , Visibility(..)
+    , WeatherQualifier(..)
+    , WeatherDescriptor(..)
+    , WeatherPhenomenon(..)
+    , Weather(..)
+    , CloudType(..)
+    , CloudHeight
+    , CloudAmount
+    , Clouds(..)
+    , Pressure
+    , Modifiers(..)
+    , Metar(..)
+    -- * Builders
+    , metar
+    , withModifiers
+    , withWindDirection
+    , withWindSpeed
+    , withWindVariation
+    , withPrevailingVisibilityWmo
+    , withPrevailingVisibilityFaa
+    , withLowestVisibility
+    , withRunwayVisualRange
+    -- * Parsers
+    , Parser
+    , Error(message, column)
+    , parser
+    , parse
+    ) where
 
 import Data.Aeromess.Parser
 import Data.Char (isDigit)
@@ -25,13 +74,38 @@ data Type
     | SPECI -- ^ special report issued when conditions have significantly changed.
     deriving (Bounded, Enum, Eq, Read, Show)
 
+-- | Speed unit.
+data SpeedUnit
+    = KT -- ^ knots.
+    | MPS -- metres per second.
+    | KMH -- kilometres per hour.
+    deriving (Bounded, Enum, Eq, Read, Show)
+
+-- | Mean sea level pressure unit.
+data PressureUnit
+    = Q -- ^ hPa (standard).
+    | A -- ^ inches of mercury (US).
+    deriving (Bounded, Enum, Eq, Read, Show)
+
+-- | compass point code
+data CompassPointCode
+    = N
+    | NE
+    | E
+    | SE
+    | S
+    | SW
+    | W
+    | NW
+    deriving (Bounded, Enum, Eq, Read, Show)
+
 -- | Wind direction in degrees.
 newtype WindDirection =
     WindDirection Int
     deriving (Eq, Show)
 
 -- | Variable wind direction.
-data VariableDirection = VariableDirection
+data VariableWindDirection = VariableWindDirection
     { left :: WindDirection -- ^ the left extreme of wind direction.
     , right :: WindDirection -- ^ the right extreme of wind direction.
     } deriving (Eq, Show)
@@ -49,10 +123,10 @@ data Wind
     = Calm
     | Wind { direction :: Maybe WindDirection -- ^ mean true direction in degrees rounded off to the nearest 10 degrees
                                               -- from which the wind is blowing, when absent the direction is variable.
-          ,  speed :: WindSpeed -- ^ mean speed of the wind over the 10-minute period immediately preceding the observation.
-          ,  gust :: Maybe WindSpeed -- ^ maximum gust wind speed if relevant.
-          ,  variation :: Maybe VariableDirection -- ^ variable wind direction if relevant.
-           }
+           , speed :: WindSpeed -- ^ mean speed of the wind over the 10-minute period immediately preceding the observation.
+           , gust :: Maybe WindSpeed -- ^ maximum gust wind speed if relevant.
+           , variation :: Maybe VariableWindDirection -- ^ variable wind direction if relevant.
+            }
     deriving (Eq, Show)
 
 -- | Visibility tendency at the runway.
@@ -67,8 +141,8 @@ data VisibilityDistance
     = VisibilityDistanceMetre Int -- ^ metre, standard unit.
     | VisibilityDistanceFeet Int -- ^ feet, used by FAA for RVR.
     | VisibilityDistanceMile { unit :: Maybe Int -- ^ mile, formally statute mile, used by US/Canada.
-                            ,  fraction :: Maybe (Int, Int) -- ^ mile fraction.
-                             }
+                             , fraction :: Maybe (Int, Int) -- ^ mile fraction.
+                              }
     deriving (Eq, Show)
 
 -- | Runway designator: 2 digits possibility appended with L(eft) C(entral) or R(ight) for parallel runways.
@@ -77,7 +151,7 @@ newtype RunwayDesignator =
     deriving (Eq, Show)
 
 -- | indicates an extreme value of runway visual range.
-data ExtrmeRvr
+data ExtremeRvr
     = Lower
     | Higher
     deriving (Eq, Show)
@@ -86,7 +160,7 @@ data ExtrmeRvr
 data RunwayVisualRange = RunwayVisualRange
     { designator :: RunwayDesignator -- ^ runway designator.
     , meanVisibility :: VisibilityDistance -- ^ mean visibility in metre.
-    , isOutsideMeasuringRange :: Maybe ExtrmeRvr -- ^ present only if the RVR values are outside the measuring range of the observing system.
+    , isOutsideMeasuringRange :: Maybe ExtremeRvr -- ^ present only if the RVR values are outside the measuring range of the observing system.
     , visibilityTendency :: Maybe VisibilityTendency -- ^ visibility tendency.
     } deriving (Eq, Show)
 
@@ -200,10 +274,10 @@ data Pressure
 
 -- | METAR modifiers.
 data Modifiers = Modifiers
-  { corrected :: Bool -- ^ whether the report was corrected.
-  , auto :: Bool -- ^ whether the report contains fully automated observations without human intervention.
-  , missed :: Bool -- ^ whether the report corresponds to a missing report.
-  } deriving (Eq, Show)
+    { corrected :: Bool -- ^ whether the report was corrected.
+    , auto :: Bool -- ^ whether the report contains fully automated observations without human intervention.
+    , missed :: Bool -- ^ whether the report corresponds to a missing report.
+    } deriving (Eq, Show)
 
 -- | METAR: an aerodrome routine meteorological report.
 data Metar = Metar
@@ -222,28 +296,64 @@ data Metar = Metar
     , remarks :: Maybe FreeText -- ^ METAR components and miscellaneous abbreviations.
     } deriving (Eq, Show)
 
--- | All 'Modifiers' 'False'.
-noModifiers :: Modifiers
-noModifiers = Modifiers False False False
+metar :: (Monad m) => String -> (Int, Int, Int) -> m Metar
+metar st dt = do
+    _st <- mkAerodrome st
+    let (d, h, m) = dt
+    _dt <- mkDayTime d h m
+    return (Metar METAR noModifiers _st _dt Calm True Nothing [] [] Nothing Nothing Nothing Nothing)
 
--- | 'RunwayDesignator' smart constructor. Fails if given string is not a valid designator.
-mkRunwayDesignator
-    :: (Monad m)
-    => String -> m RunwayDesignator
-mkRunwayDesignator s
-    | length s /= 2 && length s /= 3 = fail ("invalid runway designator=" ++ s)
-    | not (all isDigit (take 2 s)) = fail ("invalid runway designator=" ++ s)
-    | length s == 3 && (last s /= 'C' && last s /= 'R' && last s /= 'L') =
-        fail ("invalid runway designator=" ++ s)
-    | otherwise = return (RunwayDesignator s)
+withModifiers :: (Monad m) => (Bool, Bool, Bool) -> m Metar -> m Metar
+withModifiers m builder = do
+    let (cor, aut, mis) = m
+    fmap (\mt -> (mt {modifiers = Modifiers cor aut mis})) builder
 
--- | 'WindDirection' smart constructor. Fails if given integer is outside [0 .. 359].
-mkWindDirection
-    :: (Monad m)
-    => Int -> m WindDirection
-mkWindDirection n
-    | n < 0 || n > 359 = fail ("invalid degrees=" ++ show n)
-    | otherwise = return (WindDirection n)
+withWindDirection :: (Monad m) => Int -> m Metar -> m Metar
+withWindDirection dir builder = do
+    _dir <- mkWindDirection dir
+    fmap (\mt -> (mt {wind = (wind mt) {direction = Just _dir}})) builder
+
+withWindSpeed :: (Monad m) => Int -> Maybe Int -> SpeedUnit -> m Metar -> m Metar
+withWindSpeed spd gst ut builder = do
+    _spd <- mkWindSpeed spd ut
+    _gst <-
+        case gst of
+            Nothing -> return Nothing
+            Just s -> fmap Just (mkWindSpeed s ut)
+    fmap (\mt -> (mt {wind = (wind mt) {speed = _spd, gust = _gst}})) builder
+
+withWindVariation :: (Monad m) => Int -> Int -> m Metar -> m Metar
+withWindVariation lft rgt builder = do
+    _lft <- mkWindDirection lft
+    _rgt <- mkWindDirection rgt
+    fmap
+        (\mt -> (mt {wind = (wind mt) {variation = Just (VariableWindDirection _lft _rgt)}}))
+        builder
+
+withPrevailingVisibilityWmo :: (Monad m) => Int -> m Metar -> m Metar
+withPrevailingVisibilityWmo dst builder = undefined
+
+withPrevailingVisibilityFaa :: (Monad m) => Maybe Int -> Maybe (Int, Int) -> m Metar -> m Metar
+withPrevailingVisibilityFaa mile fraction builder = undefined
+
+withLowestVisibility :: (Monad m) => Maybe Int -> Maybe CompassPoint -> m Metar -> m Metar
+withLowestVisibility dst cp builder = undefined
+
+withRunwayVisualRange ::
+       (Monad m)
+    => String
+    -> Int
+    -> Maybe ExtremeRvr
+    -> Maybe VisibilityTendency
+    -> m Metar
+    -> m Metar
+withRunwayVisualRange rwy dst ext tdc builder = undefined
+
+foo :: Metar
+foo =
+    metar "ESSA" (14, 13, 50) $ do
+        m <- withWindDirection 28 >> withWindSpeed 40 Nothing KT >> withWindVariation 50 120
+        return (fromMaybe (error "?") m)
 
 -- | 'Metar' parser.
 parser :: Parser Metar
@@ -270,51 +380,60 @@ parser = do
     vwc <- vwcParser
     let ok = isNothing vwc
     let (vs, we, cl) = fromMaybe (Nothing, [], []) vwc
+    let m = Modifiers (cor1 || cor2) au ms
     -- TODO, once everything is parsed, check for '=' or end of line.
-    return (Metar rt (Modifiers (cor1 || cor2) au ms) st dt wd ok vs we cl Nothing Nothing Nothing Nothing)
+    return (Metar rt m st dt wd ok vs we cl Nothing Nothing Nothing Nothing)
 
 -- | Parses the given textual representation of a 'Metar'.
 -- return either an 'Error' ('Left') or the parsed 'Metar' ('Right').
 parse :: String -> Either Error Metar
 parse = runParser parser
 
--- | Speed unit.
-data SpeedUnit
-    = KT -- ^ knots.
-    | MPS -- metres per second.
-    | KMH -- kilometres per hour.
-    deriving (Bounded, Enum, Eq, Read, Show)
+-- ** Smart constructors.
+-- | All 'Modifiers' 'False'.
+noModifiers :: Modifiers
+noModifiers = Modifiers False False False
 
--- | Mean sea level pressure unit.
-data PressureUnit
-    = Q -- ^ hPa (standard).
-    | A -- ^ inches of mercury (US).
-    deriving (Bounded, Enum, Eq, Read, Show)
+-- | 'RunwayDesignator' smart constructor. Fails if given string is not a valid designator.
+mkRunwayDesignator :: (Monad m) => String -> m RunwayDesignator
+mkRunwayDesignator s
+    | length s /= 2 && length s /= 3 = fail ("invalid runway designator=" ++ s)
+    | not (all isDigit (take 2 s)) = fail ("invalid runway designator=" ++ s)
+    | length s == 3 && (last s /= 'C' && last s /= 'R' && last s /= 'L') =
+        fail ("invalid runway designator=" ++ s)
+    | otherwise = return (RunwayDesignator s)
 
--- | compass point code
-data CompassPointCode
-    = N
-    | NE
-    | E
-    | SE
-    | S
-    | SW
-    | W
-    | NW
-    deriving (Bounded, Enum, Eq, Read, Show)
+-- | 'WindSpeed' smart constructor. Fails if given speed is outside [0..99].
+mkWindSpeed :: (Monad m) => Int -> SpeedUnit -> m WindSpeed
+mkWindSpeed s u
+    | s < 0 || s > 99 = fail ("invalid wind speed=" ++ show s)
+    | otherwise = return (speedFrom s u)
 
+-- | 'WindSpeed' from given speed and unit.
+speedFrom :: Int -> SpeedUnit -> WindSpeed
+speedFrom s KT = WindSpeedKt s
+speedFrom s MPS = WindSpeedMps s
+speedFrom s KMH = WindSpeedKmh s
+
+-- | 'WindDirection' smart constructor. Fails if given integer is outside [0 .. 359].
+mkWindDirection :: (Monad m) => Int -> m WindDirection
+mkWindDirection d
+    | d < 0 || d > 359 = fail ("invalid degrees=" ++ show d)
+    | otherwise = return (WindDirection d)
+
+-- ** Parsing.
 -- | 'WindDirection' parser.
 wdParser :: Parser WindDirection
 wdParser = natural 3 >>= mkWindDirection
 
 -- | 'VariableDirection' parser.
-variableDirectionParser :: Parser VariableDirection
+variableDirectionParser :: Parser VariableWindDirection
 variableDirectionParser = do
     _ <- space
     l <- wdParser
     _ <- char 'V'
     r <- wdParser
-    return (VariableDirection l r)
+    return (VariableWindDirection l r)
 
 -- | if VRB -> Nothing, else parseDegrees.
 windDirectionParser :: Parser (Maybe WindDirection)
@@ -330,12 +449,6 @@ calmParser = do
     _ <- string "00000"
     _ <- enumeration :: Parser SpeedUnit
     return Calm
-
--- | 'WindSpeed' from given speed and unit.
-speedFrom :: Int -> SpeedUnit -> WindSpeed
-speedFrom s KT = WindSpeedKt s
-speedFrom s MPS = WindSpeedMps s
-speedFrom s KMH = WindSpeedKmh s
 
 -- | 'Wind' parser.
 -- wind direction on 3 digits, degrees

@@ -30,7 +30,7 @@ module Data.Icao.AtsMessage
     , F7.mkAircraftIdentification
     , F7.mkSsrCode
     , F9.mkAircraftType
-    -- re-exported Parser
+    -- * Parser
     , Parser
     , Error(message, column)
     , parse

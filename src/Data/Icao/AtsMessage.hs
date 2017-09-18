@@ -2,6 +2,8 @@
 -- Operations on Air Traffic Service (ATS) messages as defined in
 -- the ICAO 4444 edition 2016 standard.
 --
+-- TODO: consider builder as in AerodromeReport.
+--
 -- == / Relevant links /
 -- - <http://flightservicebureau.org/wp-content/uploads/2017/03/ICAO-Doc4444-Pans-Atm-16thEdition-2016-OPSGROUP.pdf ICAO 4444 Editon 2016>
 -- - <http://wiki.flightgear.org/User:Johan_G/Standard_ICAO_ATS_messages_and_fields Standard ICAO ATS messages and fields>
@@ -30,7 +32,7 @@ module Data.Icao.AtsMessage
     , F7.mkAircraftIdentification
     , F7.mkSsrCode
     , F9.mkAircraftType
-    -- re-exported Parser
+    -- * Parser
     , Parser
     , Error(message, column)
     , parse

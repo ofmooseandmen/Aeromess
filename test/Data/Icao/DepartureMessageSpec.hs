@@ -2,10 +2,10 @@ module Data.Icao.DepartureMessageSpec
     ( spec
     ) where
 
+import Data.Maybe(fromJust)
 import Data.Either ()
 import Data.Function ((&))
 import Data.Icao.AtsMessage
-import Data.Icao.Expected
 import Test.Hspec
 
 spec :: Spec
@@ -16,33 +16,33 @@ spec =
             Right
                 (Dep
                      (DepartureContent
-                          (mkAircraftIdentification' "CSA4311")
+                          (fromJust (mkAircraftIdentification "CSA4311"))
                           Nothing
-                          (mkAerodrome' "EGPD")
-                          (mkHhmm' 19 23)
-                          (mkAerodrome' "ENZV")
+                          (fromJust (mkAerodrome "EGPD"))
+                          (fromJust (mkHhmm 19 23))
+                          (fromJust (mkAerodrome "ENZV"))
                           emptyOtherInformation))
         it "parses a DEP message containing the SSR mode and code" $
             parse "(DEP-AFR1/A3440-ESSA0800-LFPG-0)" `shouldBe`
             Right
                 (Dep
                      (DepartureContent
-                          (mkAircraftIdentification' "AFR1")
-                          (Just (mkSsrCode' "3440"))
-                          (mkAerodrome' "ESSA")
-                          (mkHhmm' 8 0)
-                          (mkAerodrome' "LFPG")
+                          (fromJust (mkAircraftIdentification "AFR1"))
+                          (Just (fromJust (mkSsrCode "3440")))
+                          (fromJust (mkAerodrome "ESSA"))
+                          (fromJust (mkHhmm 8 0))
+                          (fromJust (mkAerodrome "LFPG"))
                           emptyOtherInformation))
         it "parses a DEP message containing a F18 with STS and PBN" $
             parse "(DEP-CSA4311-EGPD1923-ENZV-PBN/A1T1 STS/MARSA)" `shouldBe`
             Right
                 (Dep
                      (DepartureContent
-                          (mkAircraftIdentification' "CSA4311")
+                          (fromJust (mkAircraftIdentification "CSA4311"))
                           Nothing
-                          (mkAerodrome' "EGPD")
-                          (mkHhmm' 19 23)
-                          (mkAerodrome' "ENZV")
+                          (fromJust (mkAerodrome "EGPD"))
+                          (fromJust (mkHhmm 19 23))
+                          (fromJust (mkAerodrome "ENZV"))
                           (emptyOtherInformation & withSpecialHandlingReason MARSA .
                            withPbnCapabilities [A1, T1])))
         it "parses a DEP message containing a F18 with DEST and DOF" $
@@ -50,10 +50,10 @@ spec =
             Right
                 (Dep
                      (DepartureContent
-                          (mkAircraftIdentification' "CSA4311")
+                          (fromJust (mkAircraftIdentification "CSA4311"))
                           Nothing
-                          (mkAerodrome' "EGPD")
-                          (mkHhmm' 19 23)
-                          (mkAerodrome' "ZZZZ")
-                          (emptyOtherInformation & withDestination (mkCodedDesignator' "ESMS") .
-                           withDof (mkDate' 87 6 1))))
+                          (fromJust (mkAerodrome "EGPD"))
+                          (fromJust (mkHhmm 19 23))
+                          (fromJust (mkAerodrome "ZZZZ"))
+                          (emptyOtherInformation & withDestination (fromJust (mkCodedDesignator "ESMS")) .
+                           withDof (fromJust (mkDate 87 6 1)))))

@@ -2,8 +2,8 @@ module Data.Icao.ArrivalMessageSpec
     ( spec
     ) where
 
+import Data.Maybe(fromJust)
 import Data.Icao.AtsMessage
-import Data.Icao.Expected
 import Test.Hspec
 
 spec :: Spec
@@ -14,50 +14,50 @@ spec =
             Right
                 (Arr
                      (ArrivalContent
-                          (mkAircraftIdentification' "CSA406")
+                          (fromJust (mkAircraftIdentification "CSA406"))
                           Nothing
-                          (mkAerodrome' "LHBP")
-                          (mkHhmm' 8 0)
+                          (fromJust (mkAerodrome "LHBP"))
+                          (fromJust (mkHhmm 8 0))
                           Nothing
-                          (mkAerodrome' "LKPR")
-                          (mkHhmm' 9 13)
+                          (fromJust (mkAerodrome "LKPR"))
+                          (fromJust (mkHhmm 9 13))
                           Nothing))
         it "parses an ARR message containing the SSR mode and code" $
             parse "(ARR-SAS2000/A1001-ESMS0800-ESGG0905)" `shouldBe`
             Right
                 (Arr
                      (ArrivalContent
-                          (mkAircraftIdentification' "SAS2000")
-                          (Just (mkSsrCode' "1001"))
-                          (mkAerodrome' "ESMS")
-                          (mkHhmm' 8 0)
+                          (fromJust (mkAircraftIdentification "SAS2000"))
+                          (Just (fromJust (mkSsrCode "1001")))
+                          (fromJust (mkAerodrome "ESMS"))
+                          (fromJust (mkHhmm 8 0))
                           Nothing
-                          (mkAerodrome' "ESGG")
-                          (mkHhmm' 9 5)
+                          (fromJust (mkAerodrome "ESGG"))
+                          (fromJust (mkHhmm 9 5))
                           Nothing))
         it "parses an ARR message indicating diversionary landing" $
             parse "(ARR-AFR154-LFPO0803-ELLX-LFJL0920)" `shouldBe`
             Right
                 (Arr
                      (ArrivalContent
-                          (mkAircraftIdentification' "AFR154")
+                          (fromJust (mkAircraftIdentification "AFR154"))
                           Nothing
-                          (mkAerodrome' "LFPO")
-                          (mkHhmm' 8 3)
-                          (Just (mkAerodrome' "ELLX"))
-                          (mkAerodrome' "LFJL")
-                          (mkHhmm' 9 20)
+                          (fromJust (mkAerodrome "LFPO"))
+                          (fromJust (mkHhmm 8 3))
+                          (Just (fromJust (mkAerodrome "ELLX")))
+                          (fromJust (mkAerodrome "LFJL"))
+                          (fromJust (mkHhmm 9 20))
                           Nothing))
         it "parses an ARR message containing ADAR ZZZZ and the name of the destination" $
             parse "(ARR-AFR154-LFPO0803-ELLX-ZZZZ0920 SOMEWHERE NORTH OF EPINAL)" `shouldBe`
             Right
                 (Arr
                      (ArrivalContent
-                          (mkAircraftIdentification' "AFR154")
+                          (fromJust (mkAircraftIdentification "AFR154"))
                           Nothing
-                          (mkAerodrome' "LFPO")
-                          (mkHhmm' 8 3)
-                          (Just (mkAerodrome' "ELLX"))
-                          (mkAerodrome' "ZZZZ")
-                          (mkHhmm' 9 20)
-                          (Just (mkFreeText' "SOMEWHERE NORTH OF EPINAL"))))
+                          (fromJust (mkAerodrome "LFPO"))
+                          (fromJust (mkHhmm 8 3))
+                          (Just (fromJust (mkAerodrome "ELLX")))
+                          (fromJust (mkAerodrome "ZZZZ"))
+                          (fromJust (mkHhmm 9 20))
+                          (Just (fromJust (mkFreeText "SOMEWHERE NORTH OF EPINAL")))))

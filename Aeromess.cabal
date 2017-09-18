@@ -26,7 +26,7 @@ library
                      , Data.Icao.OtherInformation
                      , Data.Icao.SupplementaryInformation
                      , Data.Icao.Time
-                     , Data.Wmo.Metar
+                     , Data.Wmo.AerodromeReport
   other-modules:       Data.Aeromess.Parser
                      , Data.Icao.F3
                      , Data.Icao.F7
@@ -53,9 +53,8 @@ test-suite Aeromess-test
                      , Data.Icao.LocationSpec
                      , Data.Icao.OtherInformationSpec
                      , Data.Icao.TimeSpec
-                     , Data.Wmo.MetarSpec
-                     , Data.Wmo.MetarWmoSpec
-                     , Data.Wmo.MetarFaaSpec
+                     , Data.Wmo.AerodromeReportWmoSpec
+                     , Data.Wmo.AerodromeReportFaaSpec
   main-is:             Spec.hs
   build-depends:       base
                      , Aeromess

@@ -572,11 +572,11 @@ visiblityWithRvr rwy dst ext tdc (Just v) =
 -- ----------------
 -- Private parsers.
 -- ----------------
--- | 'WindDirection' parser.
+-- | wind direction parser.
 wdParser :: Parser Int
 wdParser = natural 3 >>= mkWindDirection
 
--- | 'VariableDirection' parser.
+-- | 'WindVariableDirection' parser.
 variableDirectionParser :: Parser WindVariableDirection
 variableDirectionParser = do
     _ <- space
@@ -585,7 +585,7 @@ variableDirectionParser = do
     r <- wdParser
     return (WindVariableDirection l r)
 
--- | if VRB -> Nothing, else parseDegrees.
+-- | if VRB -> Nothing, else 'wdParser'.
 windDirectionParser :: Parser (Maybe Int)
 windDirectionParser = do
     var <- fmap isJust (optional (string "VRB"))
@@ -596,7 +596,7 @@ windDirectionParser = do
 -- | 'Calm' parser.
 calmParser :: Parser (Maybe Wind)
 calmParser = do
-    _ <- string "00000"
+    _ <- try (string "00000")
     _ <- enumeration :: Parser SpeedUnit
     return Nothing
 
@@ -604,7 +604,7 @@ calmParser = do
 -- wind direction on 3 digits, degrees
 -- speed on 2 digits
 -- optionally gust speed on 2 digits
--- speed unit.
+-- speed unit
 windParser :: Parser (Maybe Wind)
 windParser = do
     d <- windDirectionParser
@@ -629,10 +629,11 @@ rvrParser = do
             Just 'P' -> return (Just Higher)
             _ -> return Nothing
     _d <- natural 4
+    -- FAA specifies mean visibility in feet, if nothing, it's meters.
     u <- optional (string "FT")
     d <-
         case u of
-            Just "FT" -> return (VisibilityDistanceFeet (100 * _d))
+            Just _ -> return (VisibilityDistanceFeet _d)
             _ -> return (VisibilityDistanceMetres _d)
     _t <- optional (oneOf "UDN")
     t <-

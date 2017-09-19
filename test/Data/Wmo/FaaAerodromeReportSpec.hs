@@ -39,3 +39,13 @@ spec =
                 , withWindSpeed 4 Nothing KT
                 , withFaaPrevailingVisibility Nothing (Just (1, 4))
                 ]
+        it "parses a METAR with Runway Visual Range (RVR)" $
+            parse "METAR KJFK 191921Z 06010KT 3/8SM R11L/P6000FT A3003" `shouldBe`
+            metar
+                "KJFK"
+                (19, 19, 21)
+                [ withWindDirection 60
+                , withWindSpeed 10 Nothing KT
+                , withFaaPrevailingVisibility Nothing (Just (3, 8))
+                , withFaaRunwayVisualRange "11L" 6000 (Just Higher) Nothing
+                ]

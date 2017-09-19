@@ -12,6 +12,9 @@ spec =
         it "parses a CAVOK METAR" $
             parse "METAR LFPG 152330Z 25003KT CAVOK 10/09 Q1012 NOSIG" `shouldBe`
             metar "LFPG" (15, 23, 30) [withWindDirection 250, withWindSpeed 3 Nothing KT]
+        it "parses a CAVOK METAR (bis)" $
+            fmap cavok (parse "METAR LFPG 152330Z 25003KT CAVOK 10/09 Q1012 NOSIG") `shouldBe`
+            Right True
         it "parses a METAR with basic information" $
             parse "METAR ESMS 131250Z 18016KT 9999 -RA BKN008 12/12 Q0988" `shouldBe`
             metar
@@ -19,12 +22,20 @@ spec =
                 (13, 12, 50)
                 [withWindDirection 180, withWindSpeed 16 Nothing KT, withPrevailingVisibility 9999]
         it "parses a METAR with wind gust" $
-            parse "METAR ESMS 131250Z 18016G20KT 9999 -RA BKN008 12/12 Q0988" `shouldBe`
+            parse "METAR ESMS 131250Z 18016G20KMH 9999 -RA BKN008 12/12 Q0988" `shouldBe`
             metar
                 "ESMS"
                 (13, 12, 50)
                 [ withWindDirection 180
-                , withWindSpeed 16 (Just 20) KT
+                , withWindSpeed 16 (Just 20) KMH
+                , withPrevailingVisibility 9999
+                ]
+        it "parses a METAR with variable wind" $
+            parse "METAR ESMS 131250Z VRB16KT 9999 -RA BKN008 12/12 Q0988" `shouldBe`
+            metar
+                "ESMS"
+                (13, 12, 50)
+                [ withWindSpeed 16 Nothing KT
                 , withPrevailingVisibility 9999
                 ]
         it "parses a corrected METAR" $

@@ -2,10 +2,10 @@ module Data.Icao.DepartureMessageSpec
     ( spec
     ) where
 
-import Data.Maybe(fromJust)
 import Data.Either ()
 import Data.Function ((&))
 import Data.Icao.AtsMessage
+import Data.Maybe (fromJust)
 import Test.Hspec
 
 spec :: Spec
@@ -55,5 +55,6 @@ spec =
                           (fromJust (mkAerodrome "EGPD"))
                           (fromJust (mkHhmm 19 23))
                           (fromJust (mkAerodrome "ZZZZ"))
-                          (emptyOtherInformation & withDestination (fromJust (mkCodedDesignator "ESMS")) .
+                          (emptyOtherInformation &
+                           withDestination (fromJust (mkCodedDesignator "ESMS")) .
                            withDof (fromJust (mkDate 87 6 1)))))

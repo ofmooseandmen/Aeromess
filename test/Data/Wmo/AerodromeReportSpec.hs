@@ -15,14 +15,17 @@ spec =
         it "parses a CAVOK METAR (bis)" $
             fmap cavok (parse "METAR LFPG 152330Z 25003KT CAVOK 10/09 Q1012 NOSIG") `shouldBe`
             Right True
+        it "parses a METAR with 'calm' conditions" $
+            parse "METAR LFPG 152330Z 00000KT CAVOK 10/09 Q1012 NOSIG" `shouldBe`
+            metar "LFPG" (15, 23, 30) []
         it "parses a METAR with basic information" $
-            parse "METAR ESMS 131250Z 18016KT 9999 -RA BKN008 12/12 Q0988" `shouldBe`
+            parse "METAR ESMS 131250Z 18016KT 9999 12/12 Q0988" `shouldBe`
             metar
                 "ESMS"
                 (13, 12, 50)
                 [withWindDirection 180, withWindSpeed 16 Nothing KT, withPrevailingVisibility 9999]
         it "parses a METAR with wind gust" $
-            parse "METAR ESMS 131250Z 18016G20KMH 9999 -RA BKN008 12/12 Q0988" `shouldBe`
+            parse "METAR ESMS 131250Z 18016G20KMH 9999 BKN008 12/12 Q0988" `shouldBe`
             metar
                 "ESMS"
                 (13, 12, 50)
@@ -31,13 +34,8 @@ spec =
                 , withPrevailingVisibility 9999
                 ]
         it "parses a METAR with variable wind" $
-            parse "METAR ESMS 131250Z VRB16KT 9999 -RA BKN008 12/12 Q0988" `shouldBe`
-            metar
-                "ESMS"
-                (13, 12, 50)
-                [ withWindSpeed 16 Nothing KT
-                , withPrevailingVisibility 9999
-                ]
+            parse "METAR ESMS 131250Z VRB16KT 9999 BKN008 12/12 Q0988" `shouldBe`
+            metar "ESMS" (13, 12, 50) [withWindSpeed 16 Nothing KT, withPrevailingVisibility 9999]
         it "parses a corrected METAR" $
             parse "METAR COR LFPG 152330Z 25003KT CAVOK 10/09 Q1012 NOSIG" `shouldBe`
             metar
@@ -86,7 +84,7 @@ spec =
                 ]
         it "parses a METAR with prevailing visibility and Runway Visual Range (RVR)" $
             parse
-                "METAR LBBG 041600Z 12012MPS 090V150 1400 R04/P1500N R22/M0050U R27/0040 +SN BKN022 OVC050 M04/M07 Q1020 NOSIG 8849//91" `shouldBe`
+                "METAR LBBG 041600Z 12012MPS 090V150 1400 R04/P1500N R22/M0050U R27/0040 BKN022 OVC050 M04/M07 Q1020 NOSIG 8849//91" `shouldBe`
             metar
                 "LBBG"
                 (4, 16, 0)
@@ -97,4 +95,25 @@ spec =
                 , withRunwayVisualRange "04" 1500 (Just Higher) (Just NoChange)
                 , withRunwayVisualRange "22" 50 (Just Lower) (Just Up)
                 , withRunwayVisualRange "27" 40 Nothing Nothing
+                ]
+        it "parses a METAR with light rain" $
+            parse "METAR ESMS 131250Z 18016KT 9999 -RA 12/12 Q0988" `shouldBe`
+            metar
+                "ESMS"
+                (13, 12, 50)
+                [ withWindDirection 180
+                , withWindSpeed 16 Nothing KT
+                , withPrevailingVisibility 9999
+                , withWeather (Just LightWeather) Nothing [Rain]
+                ]
+        it "parses a METAR with patches of fog and mist" $
+            parse "METAR ESMS 131250Z 18016KT 9999 BCFG BR 12/12 Q0988" `shouldBe`
+            metar
+                "ESMS"
+                (13, 12, 50)
+                [ withWindDirection 180
+                , withWindSpeed 16 Nothing KT
+                , withPrevailingVisibility 9999
+                , withWeather Nothing (Just Patches) [Fog]
+                , withWeather Nothing Nothing [Mist]
                 ]

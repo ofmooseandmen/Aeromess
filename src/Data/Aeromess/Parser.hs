@@ -14,11 +14,12 @@ module Data.Aeromess.Parser
     , identifier
     , lookAhead
     , many
+    , manyTillSpace
+    , natural
     , noneOf
     , octal
     , oneOf
     , optional
-    , natural
     , runParser
     , slash
     , some
@@ -98,6 +99,10 @@ lookAhead = P.lookAhead
 -- | Applies the @p@ 0 or more times.
 many :: Parser a -> Parser [a]
 many = P.many
+
+-- | Applies the @p@ 0 or more times until a 'space'.
+manyTillSpace :: Parser a -> Parser [a]
+manyTillSpace p = P.manyTill p space
 
 -- | Parses a natural number (non-negative integer) of n digits. Returns the parsed number
 natural :: Int -> Parser Int

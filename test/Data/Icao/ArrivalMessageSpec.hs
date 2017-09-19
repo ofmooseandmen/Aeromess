@@ -2,8 +2,8 @@ module Data.Icao.ArrivalMessageSpec
     ( spec
     ) where
 
-import Data.Maybe(fromJust)
 import Data.Icao.AtsMessage
+import Data.Maybe (fromJust)
 import Test.Hspec
 
 spec :: Spec

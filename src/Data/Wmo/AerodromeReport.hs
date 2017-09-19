@@ -61,6 +61,7 @@ module Data.Wmo.AerodromeReport
     , withLowestVisibility
     , withRunwayVisualRange
     , withFaaRunwayVisualRange
+    , withWeather
     -- * Parsers
     , Parser
     , Error(message, column)
@@ -121,11 +122,11 @@ data VisibilityTendency
 
 -- | Visibility distance in appropriate unit.
 data VisibilityDistance
-    = VisibilityDistanceMetres { vdMeters :: Int } -- ^ metre, standard unit.
-    | VisibilityDistanceFeet { vdFeet :: Int } -- ^ feet, used by FAA for RVR.
+    = VisibilityDistanceMetres { vdMeters :: Int} -- ^ metre, standard unit.
+    | VisibilityDistanceFeet { vdFeet :: Int} -- ^ feet, used by FAA for RVR.
     | VisibilityDistanceMiles { vdMiles :: Maybe Int -- ^ mile, formally statute mile, used by US/Canada.
-                              , vdMileFraction :: Maybe (Int, Int) -- ^ mile fraction.
-                               }
+                             ,  vdMileFraction :: Maybe (Int, Int) -- ^ mile fraction.
+                              }
     deriving (Eq, Show)
 
 -- | Runway designator: 2 digits possibility appended with L(eft) C(entral) or R(ight) for parallel runways.
@@ -169,9 +170,9 @@ data Visibility = Visibility
 
 -- | Weather qualifier.
 data WeatherQualifier
-    = Light -- ^ light weather.
-    | Heavy -- ^ heavy weather.
-    | Vicinity -- in vicinity, i.e. not on location but within 8000 m.
+    = LightWeather -- ^ light weather.
+    | HeavyWeather -- ^ heavy weather.
+    | InVicinityWeather -- in vicinity, i.e. not on location but within 8000 m.
     deriving (Eq, Show)
 
 -- | Weather descriptor.
@@ -288,7 +289,7 @@ data AerodromeReport = AerodromeReport
 ----------------
 -- Private data.
 ----------------
--- | compass point code, only defined to facilitate parsing.
+-- | 'CompassPoint' code, only defined to facilitate parsing.
 data CompassPointCode
     = NE
     | SE
@@ -298,6 +299,44 @@ data CompassPointCode
     | E
     | S
     | W
+    deriving (Bounded, Enum, Eq, Read, Show)
+
+-- | 'WeatherDescriptor' code, only defined to facilitate parsing.
+data WeatherDescriptorCode
+    = MI
+    | BC
+    | PR
+    | DR
+    | BL
+    | SH
+    | TS
+    | FZ
+    deriving (Bounded, Enum, Eq, Read, Show)
+
+-- | 'WeatherPhenomenon' code, only defined to facilitate parsing.
+data WeatherPhenomenonCode
+    = DZ
+    | RA
+    | SN
+    | SG
+    | IC
+    | PL
+    | GR
+    | GS
+    | UP
+    | BR
+    | FG
+    | FU
+    | VA
+    | DU
+    | SA
+    | HZ
+    | PY
+    | PO
+    | SQ
+    | FC
+    | SS
+    | DS
     deriving (Bounded, Enum, Eq, Read, Show)
 
 -- | Determines the given 'AerodromeReport' reports Cloud And Visibility OK (CAVOK).
@@ -323,95 +362,98 @@ cavok m = isNothing (reportVisibility m) && null (reportWeather m) && null (repo
 -- >  example =
 -- >    Report "ESSA" (18, 21, 48) [withWindDirection 150, withWindSpeed 40 Nothing KT]
 --
-metar ::
-       (Monad m)
-    => String
-    -> (Int, Int, Int)
-    -> [m AerodromeReport -> m AerodromeReport]
-    -> m AerodromeReport
+metar
+    :: (Monad m)
+    => String -> (Int, Int, Int) -> [m AerodromeReport -> m AerodromeReport] -> m AerodromeReport
 metar st dt = with (defaultReport METAR st dt)
 
 -- | Builds a special 'AerodromeReport' (SPECI) for the given station and time and all given
 -- setter.
 -- see 'metar'.
-speci ::
-       (Monad m)
-    => String
-    -> (Int, Int, Int)
-    -> [m AerodromeReport -> m AerodromeReport]
-    -> m AerodromeReport
+speci
+    :: (Monad m)
+    => String -> (Int, Int, Int) -> [m AerodromeReport -> m AerodromeReport] -> m AerodromeReport
 speci st dt = with (defaultReport SPECI st dt)
 
 -- | Modifies the given @report@ by running each given setter.
-with ::
-       (Monad m)
-    => m AerodromeReport
-    -> [m AerodromeReport -> m AerodromeReport]
-    -> m AerodromeReport
+with
+    :: (Monad m)
+    => m AerodromeReport -> [m AerodromeReport -> m AerodromeReport] -> m AerodromeReport
 with v setters = v & foldl (.) id setters
 
 -- | Modifies the given @report@ by setting the modifiers (COR, AUTO, MIS).
-withModifiers :: (Monad m) => (Bool, Bool, Bool) -> m AerodromeReport -> m AerodromeReport
+withModifiers
+    :: (Monad m)
+    => (Bool, Bool, Bool) -> m AerodromeReport -> m AerodromeReport
 withModifiers modifs report = do
     let (cor, aut, mis) = modifs
-    fmap (\mt -> mt {reportModifiers = ReportModifiers cor aut mis}) report
+    fmap (\rp -> rp {reportModifiers = ReportModifiers cor aut mis}) report
 
 -- | Modifies the given @report@ by setting the wind direction.
-withWindDirection :: (Monad m) => Int -> m AerodromeReport -> m AerodromeReport
+withWindDirection
+    :: (Monad m)
+    => Int -> m AerodromeReport -> m AerodromeReport
 withWindDirection dir report = do
     _dir <- mkWindDirection dir
-    fmap (\mt -> mt {reportWind = windWithDirection _dir (reportWind mt)}) report
+    fmap (\rp -> rp {reportWind = windWithDirection _dir (reportWind rp)}) report
 
 -- | Modifies the given @report@ by setting the wind speed (@spd@) and gust (@gst).
-withWindSpeed ::
-       (Monad m) => Int -> Maybe Int -> SpeedUnit -> m AerodromeReport -> m AerodromeReport
+withWindSpeed
+    :: (Monad m)
+    => Int -> Maybe Int -> SpeedUnit -> m AerodromeReport -> m AerodromeReport
 withWindSpeed spd gst ut report = do
     _spd <- mkWindSpeed spd ut
     _gst <-
         case gst of
             Nothing -> return Nothing
             Just s -> fmap Just (mkWindSpeed s ut)
-    fmap (\mt -> mt {reportWind = windWithSpeed _spd _gst (reportWind mt)}) report
+    fmap (\rp -> rp {reportWind = windWithSpeed _spd _gst (reportWind rp)}) report
 
 -- | Modifies the given @report@ by setting the wind variation.
-withWindVariation :: (Monad m) => Int -> Int -> m AerodromeReport -> m AerodromeReport
+withWindVariation
+    :: (Monad m)
+    => Int -> Int -> m AerodromeReport -> m AerodromeReport
 withWindVariation lft rgt report = do
     _lft <- mkWindDirection lft
     _rgt <- mkWindDirection rgt
     fmap
-        (\mt ->
-             mt {reportWind = windWithVariation (WindVariableDirection _lft _rgt) (reportWind mt)})
+        (\rp ->
+             rp {reportWind = windWithVariation (WindVariableDirection _lft _rgt) (reportWind rp)})
         report
 
 -- | Modifies the given @report@ by setting the prevailing visibility according to the WMO standard.
 -- the visibility is expressed in meters.
-withPrevailingVisibility :: (Monad m) => Int -> m AerodromeReport -> m AerodromeReport
+withPrevailingVisibility
+    :: (Monad m)
+    => Int -> m AerodromeReport -> m AerodromeReport
 withPrevailingVisibility dst report = do
     _dst <- mkVisibilityDistanceMeter dst
-    fmap (\mt -> mt {reportVisibility = visiblityWithPrevailing _dst (reportVisibility mt)}) report
+    fmap (\rp -> rp {reportVisibility = visiblityWithPrevailing _dst (reportVisibility rp)}) report
 
 -- | Modifies the given @report@ by setting the prevailing visibility according to the FAA standard.
 -- the visibility is expressed in statue miles (@mile@ and @fraction@).
-withFaaPrevailingVisibility ::
-       (Monad m) => Maybe Int -> Maybe (Int, Int) -> m AerodromeReport -> m AerodromeReport
+withFaaPrevailingVisibility
+    :: (Monad m)
+    => Maybe Int -> Maybe (Int, Int) -> m AerodromeReport -> m AerodromeReport
 withFaaPrevailingVisibility Nothing Nothing _ =
     fail "invalid prevailing visibility, at least one of mile or fraction is required"
 withFaaPrevailingVisibility m f report = do
     _dst <- mkVisibilityDistanceMile m f
-    fmap (\mt -> mt {reportVisibility = visiblityWithPrevailing _dst (reportVisibility mt)}) report
+    fmap (\rp -> rp {reportVisibility = visiblityWithPrevailing _dst (reportVisibility rp)}) report
 
 -- | Modifies the given @report@ by setting the lowest visibility (meter) and for a direction (if any).
 -- Note: this is not supported by the FAA standard.
-withLowestVisibility ::
-       (Monad m) => Int -> Maybe CompassPoint -> m AerodromeReport -> m AerodromeReport
+withLowestVisibility
+    :: (Monad m)
+    => Int -> Maybe CompassPoint -> m AerodromeReport -> m AerodromeReport
 withLowestVisibility dst cp report = do
     _dst <- mkVisibilityDistanceMeter dst
-    fmap (\mt -> mt {reportVisibility = visiblityWithLowest _dst cp (reportVisibility mt)}) report
+    fmap (\rp -> rp {reportVisibility = visiblityWithLowest _dst cp (reportVisibility rp)}) report
 
 -- | Modifies the given @report@ by adding a runway visual range (RVR) according to the WMO standard.
 -- the runway visibility is expressed in meters.
-withRunwayVisualRange ::
-       (Monad m)
+withRunwayVisualRange
+    :: (Monad m)
     => String
     -> Int
     -> Maybe ExtremeRvr
@@ -422,13 +464,13 @@ withRunwayVisualRange rwy dst ext tdc report = do
     _rwy <- mkRunwayDesignator rwy
     _dst <- mkVisibilityDistanceMeter dst
     fmap
-        (\mt -> mt {reportVisibility = visiblityWithRvr _rwy _dst ext tdc (reportVisibility mt)})
+        (\rp -> rp {reportVisibility = visiblityWithRvr _rwy _dst ext tdc (reportVisibility rp)})
         report
 
 -- | Modifies the given @report@ by adding the runway visual range (RVR) according to the FAA standard.
 -- the runway visibility is expressed in feet.
-withFaaRunwayVisualRange ::
-       (Monad m)
+withFaaRunwayVisualRange
+    :: (Monad m)
     => String
     -> Int
     -> Maybe ExtremeRvr
@@ -439,8 +481,18 @@ withFaaRunwayVisualRange rwy dst ext tdc report = do
     _rwy <- mkRunwayDesignator rwy
     _dst <- mkVisibilityDistanceFeet dst
     fmap
-        (\mt -> mt {reportVisibility = visiblityWithRvr _rwy _dst ext tdc (reportVisibility mt)})
+        (\rp -> rp {reportVisibility = visiblityWithRvr _rwy _dst ext tdc (reportVisibility rp)})
         report
+
+-- | Modifies the given @report@ by adding the weather observation.
+withWeather
+    :: (Monad m)
+    => Maybe WeatherQualifier
+    -> Maybe WeatherDescriptor
+    -> [WeatherPhenomenon]
+    -> m AerodromeReport
+    -> m AerodromeReport
+withWeather q d p = fmap (reportWithWeather (Weather q d p))
 
 -- | 'AerodromeReport' parser.
 -- This parser supports both the WMO code definition and the variation defined by the FAA.
@@ -482,7 +534,9 @@ parse = runParser parser
 noModifiers :: ReportModifiers
 noModifiers = ReportModifiers False False False
 
-mkRunwayDesignator :: (Monad m) => String -> m RunwayDesignator
+mkRunwayDesignator
+    :: (Monad m)
+    => String -> m RunwayDesignator
 mkRunwayDesignator s
     | length s /= 2 && length s /= 3 = fail ("invalid runway designator=" ++ s)
     | not (all isDigit (take 2 s)) = fail ("invalid runway designator=" ++ s)
@@ -490,22 +544,30 @@ mkRunwayDesignator s
         fail ("invalid runway designator=" ++ s)
     | otherwise = return (RunwayDesignator s)
 
-mkWindSpeed :: (Monad m) => Int -> SpeedUnit -> m WindSpeed
+mkWindSpeed
+    :: (Monad m)
+    => Int -> SpeedUnit -> m WindSpeed
 mkWindSpeed s u
     | s < 0 || s > 99 = fail ("invalid wind speed=" ++ show s)
     | otherwise = return (WindSpeed u s)
 
-mkWindDirection :: (Monad m) => Int -> m Int
+mkWindDirection
+    :: (Monad m)
+    => Int -> m Int
 mkWindDirection d
     | d < 0 || d > 359 = fail ("invalid degrees=" ++ show d)
     | otherwise = return d
 
-mkVisibilityDistanceMeter :: (Monad m) => Int -> m VisibilityDistance
+mkVisibilityDistanceMeter
+    :: (Monad m)
+    => Int -> m VisibilityDistance
 mkVisibilityDistanceMeter m
     | m < 0 || m > 9999 = fail ("invalid distance [meter]=" ++ show m)
     | otherwise = return (VisibilityDistanceMetres m)
 
-mkVisibilityDistanceMile :: (Monad m) => Maybe Int -> Maybe (Int, Int) -> m VisibilityDistance
+mkVisibilityDistanceMile
+    :: (Monad m)
+    => Maybe Int -> Maybe (Int, Int) -> m VisibilityDistance
 mkVisibilityDistanceMile m f
     | maybe False (< 0) m || maybe False (> 99) m = fail ("invalid distance [mile]=" ++ show m)
     | maybe False (< 0) (fmap fst f) || maybe False (> 9) (fmap fst f) =
@@ -514,7 +576,9 @@ mkVisibilityDistanceMile m f
         fail ("invalid distance [fraction]=" ++ show f)
     | otherwise = return (VisibilityDistanceMiles m f)
 
-mkVisibilityDistanceFeet :: (Monad m) => Int -> m VisibilityDistance
+mkVisibilityDistanceFeet
+    :: (Monad m)
+    => Int -> m VisibilityDistance
 mkVisibilityDistanceFeet m
     | m < 0 || m > 9999 = fail ("invalid distance [feet]=" ++ show m)
     | otherwise = return (VisibilityDistanceFeet m)
@@ -525,7 +589,9 @@ mkVisibilityDistanceFeet m
 -- | default 'AerodromeReport' of given type for given station and time
 -- No wind, and CAVOK conditions.
 -- TODO: ISA conditions (pressure and temperature)
-defaultReport :: (Monad m) => ReportType -> String -> (Int, Int, Int) -> m AerodromeReport
+defaultReport
+    :: (Monad m)
+    => ReportType -> String -> (Int, Int, Int) -> m AerodromeReport
 defaultReport t st (d, h, m) = do
     _st <- mkAerodrome st
     _dt <- mkDayTime d h m
@@ -548,13 +614,15 @@ visiblityWithPrevailing :: VisibilityDistance -> Maybe Visibility -> Maybe Visib
 visiblityWithPrevailing dst Nothing = Just (Visibility dst Nothing Nothing [])
 visiblityWithPrevailing dst (Just v) = Just (v {vPrevailing = dst})
 
-visiblityWithLowest ::
-       VisibilityDistance -> Maybe CompassPoint -> Maybe Visibility -> Maybe Visibility
+visiblityWithLowest :: VisibilityDistance
+                    -> Maybe CompassPoint
+                    -> Maybe Visibility
+                    -> Maybe Visibility
 visiblityWithLowest dst cp Nothing = Just (Visibility (VisibilityDistanceMetres 0) (Just dst) cp [])
 visiblityWithLowest dst cp (Just v) = Just (v {vLowest = Just dst, vLowestDirection = cp})
 
-visiblityWithRvr ::
-       RunwayDesignator
+visiblityWithRvr
+    :: RunwayDesignator
     -> VisibilityDistance
     -> Maybe ExtremeRvr
     -> Maybe VisibilityTendency
@@ -565,6 +633,9 @@ visiblityWithRvr rwy dst ext tdc Nothing =
         (Visibility (VisibilityDistanceMetres 0) Nothing Nothing [RunwayVisualRange rwy dst ext tdc])
 visiblityWithRvr rwy dst ext tdc (Just v) =
     Just (v {vRunways = RunwayVisualRange rwy dst ext tdc : vRunways v})
+
+reportWithWeather :: Weather -> AerodromeReport -> AerodromeReport
+reportWithWeather w r = r {reportWeather = w : reportWeather r}
 
 -- ----------------
 -- Private parsers.
@@ -666,7 +737,7 @@ wmoVisibilityParser :: Parser (VisibilityDistance, Maybe VisibilityDistance, May
 wmoVisibilityParser = do
     v <- natural 4
     _ <- space
-    l <- optional (natural 4)
+    l <- optional (try (natural 4))
     d <-
         case l of
             Nothing -> return Nothing
@@ -675,10 +746,8 @@ wmoVisibilityParser = do
 
 -- | 'x/ySM' parser.
 mileFractionParser :: Parser (Int, Int)
-mileFractionParser
-    -- fraction can start with a space if unit of mile is not present
- = do
-    _ <- optional space
+mileFractionParser = do
+    _ <- optional space -- fraction can start with a space if unit of mile is not present
     n <- natural 1
     _ <- slash
     d <- natural 1
@@ -701,12 +770,76 @@ faaVisibilityParser = do
     return (dm, Nothing, Nothing)
 
 -- | 'Visibility' parser.
+-- This parse is called only when the report does not contain CAVOK
+-- in which case visibility is required.
 -- FAA deviates from the WMO standard here.
 visibilityParser :: Parser Visibility
 visibilityParser = do
     (v, l, d) <- try wmoVisibilityParser <|> faaVisibilityParser
     r <- try rvrsParser
+    -- depending on what was successfully parsed (e.g. 9999) there maybe a space before the next field...
+    _ <- optional space
     return (Visibility v l d r)
+
+wQualifierParser :: Parser WeatherQualifier
+wQualifierParser = do
+    q <- choice [string "-", string "+", string "VC"]
+    case q of
+        "-" -> return LightWeather
+        "+" -> return HeavyWeather
+        _ -> return InVicinityWeather
+
+wDescriptorParser :: Parser WeatherDescriptor
+wDescriptorParser = do
+    d <- enumeration :: Parser WeatherDescriptorCode
+    case d of
+        MI -> return Shallow
+        BC -> return Patches
+        PR -> return Partial
+        DR -> return Drifting
+        BL -> return Blowing
+        SH -> return Showers
+        TS -> return Thunderstorm
+        FZ -> return Freezing
+
+wPhenomenonParser :: Parser WeatherPhenomenon
+wPhenomenonParser = do
+    p <- enumeration :: Parser WeatherPhenomenonCode
+    case p of
+        DZ -> return Drizzle
+        RA -> return Rain
+        SN -> return Snow
+        SG -> return SnowGrains
+        IC -> return IceCrystals
+        PL -> return IcePellets
+        GR -> return Hail
+        GS -> return SmallHail
+        UP -> return UnknownPrecipitation
+        BR -> return Mist
+        FG -> return Fog
+        FU -> return Smoke
+        VA -> return VolcanicAsh
+        DU -> return WidespreadDust
+        SA -> return Sand
+        HZ -> return Haze
+        PY -> return Spray
+        PO -> return Dust
+        SQ -> return Squall
+        FC -> return FunnelCloud
+        SS -> return Sandstorm
+        DS -> return DustStorm
+
+-- | 'Weather' parser.
+weatherParser :: Parser Weather
+weatherParser = do
+    q <- optional wQualifierParser
+    d <- optional wDescriptorParser
+    p <- manyTillSpace wPhenomenonParser
+    return (Weather q d p)
+
+-- | parser of a list of 'Weather'.
+weathersParser :: Parser [Weather]
+weathersParser = many (try weatherParser)
 
 -- | CAVOK or visibility, weather and clouds parser.
 -- returns nothing if CAVOK
@@ -717,4 +850,5 @@ vwcParser = do
         then return Nothing
         else do
             vs <- visibilityParser
-            return (Just (Just vs, [], []))
+            we <- weathersParser
+            return (Just (Just vs, we, []))

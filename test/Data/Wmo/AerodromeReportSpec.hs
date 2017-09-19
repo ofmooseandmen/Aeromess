@@ -75,7 +75,7 @@ spec =
                 ]
         it "parses a METAR with prevailing visibility and Runway Visual Range (RVR)" $
             parse
-                "METAR LBBG 041600Z 12012MPS 090V150 1400 R04/P1500N R22/M0050U +SN BKN022 OVC050 M04/M07 Q1020 NOSIG 8849//91" `shouldBe`
+                "METAR LBBG 041600Z 12012MPS 090V150 1400 R04/P1500N R22/M0050U R27/0040 +SN BKN022 OVC050 M04/M07 Q1020 NOSIG 8849//91" `shouldBe`
             metar
                 "LBBG"
                 (4, 16, 0)
@@ -85,4 +85,5 @@ spec =
                 , withPrevailingVisibility 1400
                 , withRunwayVisualRange "04" 1500 (Just Higher) (Just NoChange)
                 , withRunwayVisualRange "22" 50 (Just Lower) (Just Up)
+                , withRunwayVisualRange "27" 40 Nothing Nothing
                 ]

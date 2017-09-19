@@ -21,7 +21,6 @@ module Data.Wmo.AerodromeReport
     -- * Data
     , Type(..)
     , SpeedUnit(..)
-    , PressureUnit(..)
     , WindDirection
     , WindVariableDirection(left, right)
     , WindSpeed
@@ -308,6 +307,12 @@ cavok m = isNothing (visibility m) && null (weather m) && null (clouds m)
 
 -- | Builds a periodic 'Report' (METAR) for the given station and time and all given
 -- setter.
+--
+-- If no @setters@ are provided, the METAR will contain no Wind (Calm conditions),
+-- report 'cavok' conditions, ISA temperature (15 degrees Celsisus) and pressure (TODO value)
+-- TODO default dew point???
+-- TODO update defaultReport
+--
 -- See 'with' and @withXXXX@ functions.
 --
 -- The returned 'Monad' allows to extract the 'Report' using a 'Maybe' or 'Either'
@@ -428,19 +433,19 @@ withFaaRunwayVisualRange rwy dst ext tdc report = do
 parser :: Parser Report
 parser = do
     rt <- enumeration :: Parser Type
-    -- WMO allow COR here
+    -- WMO allows COR here
     cor1 <- fmap isJust (optional (try (string " COR")))
     _ <- space
-    -- station.
+    -- station
     st <- aerodromeParser
-    -- WMO allows NIL or AUTO, some other organisations also allow COR
-    ms <- fmap isJust (optional (try (string " NIL")))
-    au <- fmap isJust (optional (try (string " AUTO")))
-    cor2 <- fmap isJust (optional (try (string " COR")))
     _ <- space
     -- day and time
     dt <- dayTimeParser
     _ <- char 'Z'
+    -- WMO allows NIL or AUTO and also COR
+    ms <- fmap isJust (optional (try (string " NIL")))
+    au <- fmap isJust (optional (try (string " AUTO")))
+    cor2 <- fmap isJust (optional (try (string " COR")))
     _ <- space
     -- wind, either all 00000 (calm) or data
     wd <- calmParser <|> windParser

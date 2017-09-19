@@ -34,7 +34,9 @@ module Data.Aeromess.Parser
 import Control.Monad (mplus)
 import Data.Either
 import Data.Functor.Identity
+import Data.List hiding (words)
 import Data.Maybe
+import Data.Ord (comparing)
 import Prelude hiding (words)
 import qualified Text.Parsec as P
 import qualified Text.Parsec.Char as C
@@ -70,6 +72,9 @@ dash :: Parser Char
 dash = char '-'
 
 -- | Parses an enum representation. Returns the parsed value.
+-- The parsing is done in a greedy fashion by sorting the list of
+-- values by reverse order of length - i.e if possible values include
+-- @A@ and @AB@, @AB@ is tried first.
 enumeration
     :: (Bounded a, Enum a, Show a, Read a)
     => Parser a
@@ -78,7 +83,9 @@ enumeration = enum' show read
     enum'
         :: (Bounded a, Enum a)
         => (a -> String) -> (String -> a) -> Parser a
-    enum' s r = r <$> choice (map (string . s) [minBound .. maxBound])
+    enum' s r =
+        let sorted = sortBy (flip (comparing length)) (map s [minBound .. maxBound])
+        in r <$> choice (map (try . string) sorted)
 
 -- | Parses at 1 or more upper or numerical character(s). Returns the parsed string.
 identifier :: Parser String

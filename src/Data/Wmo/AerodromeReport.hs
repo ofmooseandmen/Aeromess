@@ -9,8 +9,8 @@
 -- == /Relevant links/
 -- - <http://www.wmo.int/pages/prog/www/WMOCodes/WMO306_vI1/Publications/2016update/WMO306_vI1_en_2011UP2016.pdf WMO Technical Regulations - Annex II>
 -- - <https://www.faa.gov/air_traffic/publications/media/aim.pdf>
--- - <https://en.wikipedia.org/wiki/Report Report on Wikipedia>
--- - <http://sto.iki.fi/Report>
+-- - <https://en.wikipedia.org/wiki/Metar METAR/SPECI on Wikipedia>
+-- - <http://sto.iki.fi/metar>
 --
 -- TODO: break module when implementing TAF
 -- TODO: support trend
@@ -81,26 +81,8 @@ data Type
 -- | Speed unit.
 data SpeedUnit
     = KT -- ^ knots.
-    | MPS -- ^metres per second.
+    | MPS -- ^ metres per second.
     | KMH -- ^ kilometres per hour.
-    deriving (Bounded, Enum, Eq, Read, Show)
-
--- | Mean sea level pressure unit.
-data PressureUnit
-    = Q -- ^ hPa (standard).
-    | A -- ^ inches of mercury (US).
-    deriving (Bounded, Enum, Eq, Read, Show)
-
--- | compass point code
-data CompassPointCode
-    = N
-    | NE
-    | E
-    | SE
-    | S
-    | SW
-    | W
-    | NW
     deriving (Bounded, Enum, Eq, Read, Show)
 
 -- | Wind direction in degrees.
@@ -298,6 +280,27 @@ data Report = Report
     , remarks :: Maybe FreeText -- ^ Report components and miscellaneous abbreviations.
     } deriving (Eq, Show)
 
+----------------
+-- Private data.
+----------------
+-- | Mean sea level pressure unit.
+data PressureUnit
+    = Q -- ^ hPa (standard).
+    | A -- ^ inches of mercury (US).
+    deriving (Bounded, Enum, Eq, Read, Show)
+
+-- | compass point code
+data CompassPointCode
+    = NE
+    | SE
+    | SW
+    | NW
+    | N
+    | E
+    | S
+    | W
+    deriving (Bounded, Enum, Eq, Read, Show)
+
 -- | Determines the given 'Report' reports Cloud And Visibility OK (CAVOK).
 -- CAVOK is an abbreviation for Cloud And Visibility OK, indicating no cloud below 5,000 ft
 -- (1,500 m) or the highest minimum sector altitude and no cumulonimbus or towering cumulus
@@ -465,7 +468,6 @@ parse = runParser parser
 -- ---------------------------
 -- Private smart constructors.
 -- ---------------------------
-
 noModifiers :: Modifiers
 noModifiers = Modifiers False False False
 
@@ -499,22 +501,27 @@ mkWindDirection d
     | d < 0 || d > 359 = fail ("invalid degrees=" ++ show d)
     | otherwise = return (WindDirection d)
 
-mkVisibilityDistanceMeter :: (Monad m) => Int -> m VisibilityDistance
+mkVisibilityDistanceMeter
+    :: (Monad m)
+    => Int -> m VisibilityDistance
 mkVisibilityDistanceMeter m
     | m < 0 || m > 9999 = fail ("invalid distance [meter]=" ++ show m)
     | otherwise = return (VisibilityDistanceMetre m)
 
-mkVisibilityDistanceMile :: (Monad m) => Maybe Int -> Maybe (Int, Int) -> m VisibilityDistance
+mkVisibilityDistanceMile
+    :: (Monad m)
+    => Maybe Int -> Maybe (Int, Int) -> m VisibilityDistance
 mkVisibilityDistanceMile m f
-    | maybe False (< 0) m || maybe False (> 99) m =
-        fail ("invalid distance [mile]=" ++ show m)
+    | maybe False (< 0) m || maybe False (> 99) m = fail ("invalid distance [mile]=" ++ show m)
     | maybe False (< 0) (fmap fst f) || maybe False (> 9) (fmap fst f) =
         fail ("invalid distance [fraction]=" ++ show f)
     | maybe False (< 0) (fmap snd f) || maybe False (> 9) (fmap snd f) =
         fail ("invalid distance [fraction]=" ++ show f)
     | otherwise = return (VisibilityDistanceMile m f)
 
-mkVisibilityDistanceFeet :: (Monad m) => Int -> m VisibilityDistance
+mkVisibilityDistanceFeet
+    :: (Monad m)
+    => Int -> m VisibilityDistance
 mkVisibilityDistanceFeet m
     | m < 0 || m > 9999 = fail ("invalid distance [feet]=" ++ show m)
     | otherwise = return (VisibilityDistanceFeet m)
@@ -524,12 +531,12 @@ mkVisibilityDistanceFeet m
 -- -------------------------
 -- | default 'Report' of given type for given station and time
 -- No wind, and CAVOK conditions.
+-- TODO: ISA conditions (pressure and temperature)
 defaultReport
     :: (Monad m)
     => Type -> String -> (Int, Int, Int) -> m Report
-defaultReport t st dt = do
+defaultReport t st (d, h, m) = do
     _st <- mkAerodrome st
-    let (d, h, m) = dt
     _dt <- mkDayTime d h m
     return (Report t noModifiers _st _dt Nothing Nothing [] [] Nothing Nothing Nothing Nothing)
 
@@ -549,13 +556,25 @@ visiblityWithPrevailing :: VisibilityDistance -> Maybe Visibility -> Maybe Visib
 visiblityWithPrevailing dst Nothing = Just (Visibility dst Nothing Nothing [])
 visiblityWithPrevailing dst (Just v) = Just (v {prevailing = dst})
 
-visiblityWithLowest :: VisibilityDistance -> Maybe CompassPoint -> Maybe Visibility -> Maybe Visibility
+visiblityWithLowest :: VisibilityDistance
+                    -> Maybe CompassPoint
+                    -> Maybe Visibility
+                    -> Maybe Visibility
 visiblityWithLowest dst cp Nothing = Just (Visibility (VisibilityDistanceMetre 0) (Just dst) cp [])
 visiblityWithLowest dst cp (Just v) = Just (v {lowest = Just dst, lowestDirection = cp})
 
-visiblityWithRvr :: RunwayDesignator -> VisibilityDistance -> Maybe ExtremeRvr -> Maybe VisibilityTendency -> Maybe Visibility -> Maybe Visibility
-visiblityWithRvr rwy dst ext tdc Nothing = Just (Visibility (VisibilityDistanceMetre 0) Nothing Nothing [RunwayVisualRange rwy dst ext tdc])
-visiblityWithRvr rwy dst ext tdc (Just v) = Just (v {runways = RunwayVisualRange rwy dst ext tdc : runways v})
+visiblityWithRvr
+    :: RunwayDesignator
+    -> VisibilityDistance
+    -> Maybe ExtremeRvr
+    -> Maybe VisibilityTendency
+    -> Maybe Visibility
+    -> Maybe Visibility
+visiblityWithRvr rwy dst ext tdc Nothing =
+    Just
+        (Visibility (VisibilityDistanceMetre 0) Nothing Nothing [RunwayVisualRange rwy dst ext tdc])
+visiblityWithRvr rwy dst ext tdc (Just v) =
+    Just (v {runways = RunwayVisualRange rwy dst ext tdc : runways v})
 
 -- ----------------
 -- Private parsers.
@@ -652,8 +671,7 @@ compassPointParser = do
 -- | WMO visibility: prevailing visibility on 4 digits in metres
 -- followed by optionally a space and 4 digits indicating the lowest visibility
 -- followed by optionally the direction for which the lowest visibility has been observed
--- followed by runway visibility
-wmoVisibilityParser :: Parser Visibility
+wmoVisibilityParser :: Parser (VisibilityDistance, Maybe VisibilityDistance, Maybe CompassPoint)
 wmoVisibilityParser = do
     v <- natural 4
     _ <- space
@@ -662,13 +680,13 @@ wmoVisibilityParser = do
         case l of
             Nothing -> return Nothing
             Just _ -> fmap Just (compassPointParser <* space)
-    r <- rvrsParser
-    return (Visibility (VisibilityDistanceMetre v) (fmap VisibilityDistanceMetre l) d r)
+    return (VisibilityDistanceMetre v, fmap VisibilityDistanceMetre l, d)
 
 -- | 'x/ySM' parser.
 mileFractionParser :: Parser (Int, Int)
-mileFractionParser = do
+mileFractionParser
     -- fraction can start with a space if unit of mile is not present
+ = do
     _ <- optional space
     n <- natural 1
     _ <- slash
@@ -678,18 +696,26 @@ mileFractionParser = do
 
 -- | FAA visibility: only prevailing visibility in miles and fraction ending with SM
 -- at least mile (1 digit) or fraction (1 digit / 1 digit) present.
-faaVisibilityParser :: Parser Visibility
+faaVisibilityParser :: Parser (VisibilityDistance, Maybe VisibilityDistance, Maybe CompassPoint)
 faaVisibilityParser = do
-    m <- optional (try ((natural 2 <|> natural 1) <* (string "SM" <|> string " ")))
-    f <- optional (try mileFractionParser)
-    r <- try rvrsParser
-    let p = VisibilityDistanceMile m f
-    return (Visibility p Nothing Nothing r)
+    unitOnly <- optional (try ((natural 2 <|> natural 1) <* string "SM"))
+    dm <-
+        case unitOnly of
+            Just m -> return (VisibilityDistanceMile (Just m) Nothing)
+            Nothing -> do
+                u <- optional (try ((natural 2 <|> natural 1) <* string " "))
+                f <- mileFractionParser
+                return (VisibilityDistanceMile u (Just f))
+    _ <- space
+    return (dm, Nothing, Nothing)
 
 -- | 'Visibility' parser.
 -- FAA deviates from the WMO standard here.
 visibilityParser :: Parser Visibility
-visibilityParser = try wmoVisibilityParser <|> faaVisibilityParser
+visibilityParser = do
+    (v, l, d) <- try wmoVisibilityParser <|> faaVisibilityParser
+    r <- try rvrsParser
+    return (Visibility v l d r)
 
 -- | CAVOK or visibility, weather and clouds parser.
 -- returns nothing if CAVOK

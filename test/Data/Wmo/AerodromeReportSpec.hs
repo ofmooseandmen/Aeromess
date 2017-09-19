@@ -63,7 +63,17 @@ spec =
                 , withWindDirection 250
                 , withWindSpeed 3 Nothing KT
                 ]
-        it "parses a METAR with Runway Visual Range (RVR)" $
+        it "parses a METAR with lowest visibility and direction" $
+            parse "METAR LFPG 152330Z 25003KT 1400 0800SW 10/09 Q1012 NOSIG" `shouldBe`
+            metar
+                "LFPG"
+                (15, 23, 30)
+                [ withWindDirection 250
+                , withPrevailingVisibility 1400
+                , withLowestVisibility 800 (Just SouthWest)
+                , withWindSpeed 3 Nothing KT
+                ]
+        it "parses a METAR with prevailing visibility and Runway Visual Range (RVR)" $
             parse
                 "METAR LBBG 041600Z 12012MPS 090V150 1400 R04/P1500N R22/M0050U +SN BKN022 OVC050 M04/M07 Q1020 NOSIG 8849//91" `shouldBe`
             metar

@@ -53,11 +53,11 @@ module Data.Wmo.AerodromeReport
     , withWindDirection
     , withWindSpeed
     , withWindVariation
-    , withPrevailingVisibilityWmo
-    , withPrevailingVisibilityFaa
+    , withPrevailingVisibility
+    , withFaaPrevailingVisibility
     , withLowestVisibility
-    , withRunwayVisualRangeWmo
-    , withRunwayVisualRangeFaa
+    , withRunwayVisualRange
+    , withFaaRunwayVisualRange
     -- * Parsers
     , Parser
     , Error(message, column)
@@ -301,7 +301,7 @@ data Report = Report
 
 -- | Determines the given 'Report' reports Cloud And Visibility OK (CAVOK).
 -- CAVOK is an abbreviation for Cloud And Visibility OK, indicating no cloud below 5,000 ft
---  (1,500 m) or the highest minimum sector altitude and no cumulonimbus or towering cumulus
+-- (1,500 m) or the highest minimum sector altitude and no cumulonimbus or towering cumulus
 -- at any level, a visibility of 10 km (6 mi) or more and no significant weather change.
 cavok :: Report -> Bool
 cavok m = isNothing (visibility m) && null (weather m) && null (clouds m)
@@ -329,13 +329,16 @@ speci
     => String -> (Int, Int, Int) -> [m Report -> m Report] -> m Report
 speci st dt = with (defaultReport SPECI st dt)
 
--- | Modifies the given 'Report' by running each given setter.
+-- | Modifies the given @report@ by running each given setter.
+-- Could be replaced with:
+-- > with :: (Monad m) => [a -> m a] -> (a -> m a)
+-- > with = foldl (>=>) return
 with
     :: (Monad m)
     => m Report -> [m Report -> m Report] -> m Report
 with v setters = v & foldl (.) id setters
 
--- | Modifies the given 'Report' by setting the modifiers (COR, AUTO, MIS).
+-- | Modifies the given @report@ by setting the modifiers (COR, AUTO, MIS).
 withModifiers
     :: (Monad m)
     => (Bool, Bool, Bool) -> m Report -> m Report
@@ -343,7 +346,7 @@ withModifiers modifs report = do
     let (cor, aut, mis) = modifs
     fmap (\mt -> mt {modifiers = Modifiers cor aut mis}) report
 
--- | Modifies the given @report@ by setting the wind direction.
+-- | Modifies the given @report@ by setting the wind direction.
 withWindDirection
     :: (Monad m)
     => Int -> m Report -> m Report
@@ -351,7 +354,7 @@ withWindDirection dir report = do
     _dir <- mkWindDirection dir
     fmap (\mt -> mt {wind = windWithDirection _dir (wind mt)}) report
 
--- | Modifies the given @report@ by setting the wind speed (@spd@) and gust (@gst).
+-- | Modifies the given @report@ by setting the wind speed (@spd@) and gust (@gst).
 withWindSpeed
     :: (Monad m)
     => Int -> Maybe Int -> SpeedUnit -> m Report -> m Report
@@ -363,7 +366,7 @@ withWindSpeed spd gst ut report = do
             Just s -> fmap Just (mkWindSpeed s ut)
     fmap (\mt -> mt {wind = windWithSpeed _spd _gst (wind mt)}) report
 
--- | Modifies the given @report@ by setting the wind variation.
+-- | Modifies the given @report@ by setting the wind variation.
 withWindVariation
     :: (Monad m)
     => Int -> Int -> m Report -> m Report
@@ -372,23 +375,23 @@ withWindVariation lft rgt report = do
     _rgt <- mkWindDirection rgt
     fmap (\mt -> mt {wind = windWithVariation (WindVariableDirection _lft _rgt) (wind mt)}) report
 
--- | Modifies the given @report@ by setting the prevailing visibility according to the WMO standard.
+-- | Modifies the given @report@ by setting the prevailing visibility according to the WMO standard.
 -- the visibility is expressed in meters.
-withPrevailingVisibilityWmo
+withPrevailingVisibility
     :: (Monad m)
     => Int -> m Report -> m Report
-withPrevailingVisibilityWmo dst report = do
+withPrevailingVisibility dst report = do
     _dst <- mkVisibilityDistanceMeter dst
     fmap (\mt -> mt {visibility = visiblityWithPrevailing _dst (visibility mt)}) report
 
--- | Modifies the given @report@ by setting the prevailing visibility according to the FAA standard.
+-- | Modifies the given @report@ by setting the prevailing visibility according to the FAA standard.
 -- the visibility is expressed in statue miles (@mile@ and @fraction@).
-withPrevailingVisibilityFaa
+withFaaPrevailingVisibility
     :: (Monad m)
     => Maybe Int -> Maybe (Int, Int) -> m Report -> m Report
-withPrevailingVisibilityFaa Nothing Nothing _ =
+withFaaPrevailingVisibility Nothing Nothing _ =
     fail "invalid prevailing visibility, at least one of mile or fraction is required"
-withPrevailingVisibilityFaa m f report = do
+withFaaPrevailingVisibility m f report = do
     _dst <- mkVisibilityDistanceMile m f
     fmap (\mt -> mt {visibility = visiblityWithPrevailing _dst (visibility mt)}) report
 
@@ -401,22 +404,22 @@ withLowestVisibility dst cp report = do
     _dst <- mkVisibilityDistanceMeter dst
     fmap (\mt -> mt {visibility = visiblityWithLowest _dst cp (visibility mt)}) report
 
--- | Modifies the given @report@ by adding a runway visual range (RVR) according to the WMO standard.
+-- | Modifies the given @report@ by adding a runway visual range (RVR) according to the WMO standard.
 -- the runway visibility is expressed in meters.
-withRunwayVisualRangeWmo
+withRunwayVisualRange
     :: (Monad m)
     => String -> Int -> Maybe ExtremeRvr -> Maybe VisibilityTendency -> m Report -> m Report
-withRunwayVisualRangeWmo rwy dst ext tdc report = do
+withRunwayVisualRange rwy dst ext tdc report = do
     _rwy <- mkRunwayDesignator rwy
     _dst <- mkVisibilityDistanceMeter dst
     fmap (\mt -> mt {visibility = visiblityWithRvr _rwy _dst ext tdc (visibility mt)}) report
 
--- | Modifies the given @report@ by adding the runway visual range (RVR) according to the FAA standard.
+-- | Modifies the given @report@ by adding the runway visual range (RVR) according to the FAA standard.
 -- the runway visibility is expressed in feet.
-withRunwayVisualRangeFaa
+withFaaRunwayVisualRange
     :: (Monad m)
     => String -> Int -> Maybe ExtremeRvr -> Maybe VisibilityTendency -> m Report -> m Report
-withRunwayVisualRangeFaa rwy dst ext tdc report = do
+withFaaRunwayVisualRange rwy dst ext tdc report = do
     _rwy <- mkRunwayDesignator rwy
     _dst <- mkVisibilityDistanceFeet dst
     fmap (\mt -> mt {visibility = visiblityWithRvr _rwy _dst ext tdc (visibility mt)}) report
@@ -549,9 +552,9 @@ visiblityWithRvr :: RunwayDesignator -> VisibilityDistance -> Maybe ExtremeRvr -
 visiblityWithRvr rwy dst ext tdc Nothing = Just (Visibility (VisibilityDistanceMetre 0) Nothing Nothing [RunwayVisualRange rwy dst ext tdc])
 visiblityWithRvr rwy dst ext tdc (Just v) = Just (v {runways = RunwayVisualRange rwy dst ext tdc : runways v})
 
--- -----------------------
--- Private builder parser.
--- -----------------------
+-- ----------------
+-- Private parsers.
+-- ----------------
 -- | 'WindDirection' parser.
 wdParser :: Parser WindDirection
 wdParser = natural 3 >>= mkWindDirection
@@ -660,6 +663,8 @@ wmoVisibilityParser = do
 -- | 'x/ySM' parser.
 mileFractionParser :: Parser (Int, Int)
 mileFractionParser = do
+    -- fraction can start with a space if unit of mile is not present
+    _ <- optional space
     n <- natural 1
     _ <- slash
     d <- natural 1
@@ -670,8 +675,8 @@ mileFractionParser = do
 -- at least mile (1 digit) or fraction (1 digit / 1 digit) present.
 faaVisibilityParser :: Parser Visibility
 faaVisibilityParser = do
-    m <- try (optional ((natural 2 <|> natural 1) <* (string "SM" <|> string " ")))
-    f <- optional mileFractionParser
+    m <- optional (try ((natural 2 <|> natural 1) <* (string "SM" <|> string " ")))
+    f <- optional (try mileFractionParser)
     r <- try rvrsParser
     let p = VisibilityDistanceMile m f
     return (Visibility p Nothing Nothing r)

@@ -53,8 +53,8 @@ test-suite Aeromess-test
                      , Data.Icao.LocationSpec
                      , Data.Icao.OtherInformationSpec
                      , Data.Icao.TimeSpec
-                     , Data.Wmo.AerodromeReportWmoSpec
-                     , Data.Wmo.AerodromeReportFaaSpec
+                     , Data.Wmo.AerodromeReportSpec
+                     , Data.Wmo.FaaAerodromeReportSpec
   main-is:             Spec.hs
   build-depends:       base
                      , Aeromess

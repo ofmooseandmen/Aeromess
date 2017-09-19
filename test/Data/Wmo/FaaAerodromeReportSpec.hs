@@ -1,4 +1,4 @@
-module Data.Wmo.AerodromeReportFaaSpec
+module Data.Wmo.FaaAerodromeReportSpec
     ( spec
     ) where
 
@@ -10,7 +10,7 @@ spec :: Spec
 spec =
     describe "FAA METAR paser" $ do
         it
-            "parses 'METAR KJFK 151151Z 25004KT 10SM FEW150 FEW250 22/18 A3003 RMK AO2 SLP169 T02170183 10217 20189 51020'" $
+            "parses a basic METAR" $
             parse
                 "METAR KJFK 151151Z 25004KT 10SM FEW150 FEW250 22/18 A3003 RMK AO2 SLP169 T02170183 10217 20189 51020" `shouldBe`
             metar
@@ -18,10 +18,10 @@ spec =
                 (15, 11, 51)
                 [ withWindDirection 250
                 , withWindSpeed 4 Nothing KT
-                , withPrevailingVisibilityFaa (Just 10) Nothing
+                , withFaaPrevailingVisibility (Just 10) Nothing
                 ]
         it
-            "parses 'METAR KJFK 151151Z 25004KT 10 1/4SM FEW150 FEW250 22/18 A3003 RMK AO2 SLP169 T02170183 10217 20189 51020'" $
+            "parses a METAR with prevailing visibility expressed in mile and fraction" $
             parse
                 "METAR KJFK 151151Z 25004KT 10 1/4SM FEW150 FEW250 22/18 A3003 RMK AO2 SLP169 T02170183 10217 20189 51020" `shouldBe`
             metar
@@ -29,5 +29,16 @@ spec =
                 (15, 11, 51)
                 [ withWindDirection 250
                 , withWindSpeed 4 Nothing KT
-                , withPrevailingVisibilityFaa (Just 10) (Just (1, 4))
+                , withFaaPrevailingVisibility (Just 10) (Just (1, 4))
+                ]
+        it
+            "parses a METAR with prevailing visibility expressed in fraction only" $
+            parse
+                "METAR KJFK 151151Z 25004KT 1/4SM FEW150 FEW250 22/18 A3003 RMK AO2 SLP169 T02170183 10217 20189 51020" `shouldBe`
+            metar
+                "KJFK"
+                (15, 11, 51)
+                [ withWindDirection 250
+                , withWindSpeed 4 Nothing KT
+                , withFaaPrevailingVisibility Nothing (Just (1, 4))
                 ]

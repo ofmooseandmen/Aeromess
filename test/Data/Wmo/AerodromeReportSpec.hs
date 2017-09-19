@@ -84,7 +84,7 @@ spec =
                 ]
         it "parses a METAR with prevailing visibility and Runway Visual Range (RVR)" $
             parse
-                "METAR LBBG 041600Z 12012MPS 090V150 1400 R04/P1500N R22/M0050U R27/0040 BKN022 OVC050 M04/M07 Q1020 NOSIG 8849//91" `shouldBe`
+                "METAR LBBG 041600Z 12012MPS 090V150 1400 R04/P1500N R11/1200D R22/M0050U R27/0040 BKN022 OVC050 M04/M07 Q1020 NOSIG 8849//91" `shouldBe`
             metar
                 "LBBG"
                 (4, 16, 0)
@@ -93,6 +93,7 @@ spec =
                 , withWindVariation 90 150
                 , withPrevailingVisibility 1400
                 , withRunwayVisualRange "04" 1500 (Just Higher) (Just NoChange)
+                , withRunwayVisualRange "11" 1200 Nothing (Just Down)
                 , withRunwayVisualRange "22" 50 (Just Lower) (Just Up)
                 , withRunwayVisualRange "27" 40 Nothing Nothing
                 ]
@@ -106,8 +107,8 @@ spec =
                 , withPrevailingVisibility 9999
                 , withWeather (Just LightWeather) Nothing [Rain]
                 ]
-        it "parses a METAR with patches of fog and mist" $
-            parse "METAR ESMS 131250Z 18016KT 9999 BCFG BR 12/12 Q0988" `shouldBe`
+        it "parses a METAR with patches of fog, heavy mist and snow in vicinity" $
+            parse "METAR ESMS 131250Z 18016KT 9999 BCFG +BR VCSN 12/12 Q0988" `shouldBe`
             metar
                 "ESMS"
                 (13, 12, 50)
@@ -115,5 +116,6 @@ spec =
                 , withWindSpeed 16 Nothing KT
                 , withPrevailingVisibility 9999
                 , withWeather Nothing (Just Patches) [Fog]
-                , withWeather Nothing Nothing [Mist]
+                , withWeather (Just HeavyWeather) Nothing [Mist]
+                , withWeather (Just InVicinityWeather) Nothing [Snow]
                 ]

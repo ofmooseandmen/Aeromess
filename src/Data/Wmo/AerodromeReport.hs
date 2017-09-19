@@ -343,9 +343,6 @@ speci ::
 speci st dt = with (defaultReport SPECI st dt)
 
 -- | Modifies the given @report@ by running each given setter.
--- Could be replaced with:
--- > with :: (Monad m) => [a -> m a] -> (a -> m a)
--- > with = foldl (>=>) return
 with ::
        (Monad m)
     => m AerodromeReport

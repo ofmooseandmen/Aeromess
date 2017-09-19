@@ -1,4 +1,4 @@
-Aeromess
+<center> __*Aeromess*__ </center>
 ======
 
 [![travis build status](https://img.shields.io/travis/ofmooseandmen/Aeromess/master.svg?label=travis+build)](https://travis-ci.org/ofmooseandmen/Aeromess)

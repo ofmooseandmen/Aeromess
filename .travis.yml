@@ -36,7 +36,7 @@ script:
   - stack --no-terminal test --coverage --haddock --no-haddock-deps
 
 # copy haddock to docs
-before-deploy:
+before_deploy:
   - cp -rp `stack path --local-doc-root`/Aeromess* docs
 
 # publish docs to gh-page
@@ -48,7 +48,7 @@ deploy:
   on:
     branch: master
 
-after-deploy:
+after_deploy:
   - rm -rf docs
 
 # report coverage to coveralls.

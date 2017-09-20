@@ -25,6 +25,8 @@ module Data.Icao.Location
     , mkBearingDistance
     ) where
 
+import Control.Monad.Fail
+import Prelude hiding (fail)
 import Data.Aeromess.Parser
 import Data.Char
 import Data.Either ()
@@ -90,13 +92,13 @@ aerodromeParser = do
     mkAerodrome a
 
 -- | Parses the given textual representation of an 'Aerodrome'.
--- return either an 'Error' ('Left') or the parsed 'Aerodrome' ('Right').
-parseAerodrome :: String -> Either Error Aerodrome
+-- return either an error message ('Left') or the parsed 'Aerodrome' ('Right').
+parseAerodrome :: String -> Either String Aerodrome
 parseAerodrome = runParser aerodromeParser
 
 -- | 'Aerodrome' smart constructor. Fails if the given name is not a valid.
 mkAerodrome
-    :: (Monad m)
+    :: (MonadFail m)
     => String -> m Aerodrome
 mkAerodrome n
     | length n /= 4 || not (all isUpper n) =
@@ -108,21 +110,21 @@ significantPointParser :: Parser SignificantPoint
 significantPointParser = namedPointParser <|> latLongParser
 
 -- | Parses the given textual representation of a 'SignificantPoint'.
--- return either an 'Error' ('Left') or the parsed 'SignificantPoint' ('Right').
-parseSignificantPoint :: String -> Either Error SignificantPoint
+-- return either an error message ('Left') or the parsed 'SignificantPoint' ('Right').
+parseSignificantPoint :: String -> Either String SignificantPoint
 parseSignificantPoint = runParser significantPointParser
 
 -- | 'CodedDesignator' 'SignificantPoint' smart constructor. Fails if the given name
 -- is not a valid.
 mkCodedDesignator
-    :: (Monad m)
+    :: (MonadFail m)
     => String -> m SignificantPoint
 mkCodedDesignator n = fmap CodedDesignator (mkPointNameCode n)
 
 -- | 'BearingDistance' 'SignificantPoint' smart constructor. Fails if the given name
 -- and/or bearing and/or distance are not a valid.
 mkBearingDistance
-    :: (Monad m)
+    :: (MonadFail m)
     => String -> Int -> Int -> m SignificantPoint
 mkBearingDistance n b d = do
     ref <- mkPointNameCode n
@@ -133,7 +135,7 @@ mkBearingDistance n b d = do
 -- | 'Position' 'SignificantPoint' smart constructor. Fails if the given latitude
 -- and/or longitude are not valid.
 mkPosition
-    :: (Monad m)
+    :: (MonadFail m)
     => Float -> Float -> m SignificantPoint
 mkPosition lat long = do
     la <- mkLatitude lat
@@ -141,35 +143,35 @@ mkPosition lat long = do
     return (Position (GeographicPosition la lo))
 
 mkBearing
-    :: (Monad m)
+    :: (MonadFail m)
     => Int -> m Bearing
 mkBearing b
     | b < 0 || b > 359 = fail ("invalid bearing=" ++ show b)
     | otherwise = return (Bearing b)
 
 mkDistance
-    :: (Monad m)
+    :: (MonadFail m)
     => Int -> m Distance
 mkDistance d
     | d < 0 = fail ("invalid distance=" ++ show d)
     | otherwise = return (Distance d)
 
 mkLatitude
-    :: (Monad m)
+    :: (MonadFail m)
     => Float -> m Latitude
 mkLatitude lat
     | lat < -90.0 || lat > 90.0 = fail ("invalid latitude=" ++ show lat)
     | otherwise = return (Latitude lat)
 
 mkLongitude
-    :: (Monad m)
+    :: (MonadFail m)
     => Float -> m Longitude
 mkLongitude long
     | long < -180.0 || long > 180.0 = fail ("invalid longitude=" ++ show long)
     | otherwise = return (Longitude long)
 
 mkPointNameCode
-    :: (Monad m)
+    :: (MonadFail m)
     => String -> m PointNameCode
 mkPointNameCode n
     | length n < 2 || length n > 5 =
@@ -209,7 +211,7 @@ east :: Char -> Bool
 east m = m == 'E'
 
 decimal
-    :: (Monad m)
+    :: (MonadFail m)
     => Int -> Int -> Bool -> m Float
 decimal dd mm sign
     | mm > 59 = fail ("invalid minute=" ++ show mm)

@@ -27,6 +27,8 @@ module Data.Icao.SupplementaryInformation
     , mkDinghies
     ) where
 
+import Control.Monad.Fail
+import Prelude hiding (fail)
 import Data.Char (isUpper)
 import Data.Icao.Lang
 import Data.Icao.Time
@@ -135,14 +137,15 @@ withOtherRemarks r si = si {pilotInCommand = Just r}
 
 -- | 'PersonsOnBoard' smart constructor. Fails if given number is not in range [1 .. 999].
 mkPersonsOnBoard
-    :: (Monad m)
+    :: (MonadFail m)
     => Int -> m PersonsOnBoard
 mkPersonsOnBoard n
     | n < 1 || n > 999 = fail ("invalid persons on board=" ++ show n)
     | otherwise = return (PersonsOnBoard n)
 
+-- | 'Dinghies' smart constructor. Fails if dinghies details are invalid.
 mkDinghies
-    :: (Monad m)
+    :: (MonadFail m)
     => Maybe Int -> Maybe Int -> Bool -> Maybe String -> m Dinghies
 mkDinghies nb cap cov col
     | maybe False (< 0) nb || maybe False (> 99) nb =

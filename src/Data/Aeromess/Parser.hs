@@ -1,3 +1,6 @@
+{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE TypeFamilies #-}
+
 -- |
 -- Aeromess Parser.
 -- Allows to abstract away the choice of the underlying parser
@@ -33,12 +36,13 @@ module Data.Aeromess.Parser
     ) where
 
 import Control.Monad (mplus)
+import Control.Monad.Fail
 import Data.Either
 import Data.Functor.Identity
 import Data.List hiding (words)
 import Data.Maybe
 import Data.Ord (comparing)
-import Prelude hiding (words)
+import Prelude hiding (words, fail)
 import qualified Text.Parsec as P
 import qualified Text.Parsec.Char as C
 import qualified Text.Parsec.Error as E
@@ -51,6 +55,10 @@ data Error = Error
 
 -- | Parser.
 type Parser a = P.ParsecT String () Identity a
+
+-- | 'MonadFail' implementation for 'Parser': @fail@ calls 'unexpected'.
+instance MonadFail (P.ParsecT String () Identity) where
+    fail = unexpected
 
 -- | Tries to apply @p1@, if it fails applies @p2@.
 (<|>) :: Parser a -> Parser a -> Parser a
@@ -125,8 +133,8 @@ optional :: Parser a -> Parser (Maybe a)
 optional = P.optionMaybe
 
 -- | Parses the given text using the given parser.
--- Returns either an 'Error' ('Left') or the parsed result ('Right').
-runParser :: Parser a -> String -> Either Error a
+-- Returns either an error message ('Left') or the parsed result ('Right').
+runParser :: Parser a -> String -> Either String a
 runParser p s = mapLeft err (P.parse p "" s)
 
 -- | Parses a '/' character
@@ -167,8 +175,8 @@ words :: Parser String
 words = some (P.upper <|> space)
 
 -- Private
-err :: E.ParseError -> Error
-err e = Error (errMessage e) (col e)
+err :: E.ParseError -> String
+err e = errMessage e ++ " @ column " ++ show (P.sourceColumn (P.errorPos e))
 
 errMessage :: E.ParseError -> String
 errMessage e = E.messageString (head (E.errorMessages e))
@@ -176,6 +184,3 @@ errMessage e = E.messageString (head (E.errorMessages e))
 mapLeft :: (a -> c) -> Either a b -> Either c b
 mapLeft f (Left x) = Left (f x)
 mapLeft _ (Right x) = Right x
-
-col :: E.ParseError -> Int
-col e = read (show (P.sourceColumn (P.errorPos e)))

@@ -167,6 +167,6 @@ parser :: Parser AtsMessage
 parser = between (char '(') (char ')') contentParser
 
 -- | Parses the given textual representation of an 'AtsMessage'.
--- return either an 'Error' ('Left') or the parsed 'AtsMessage' ('Right').
-parse :: String -> Either Error AtsMessage
+-- return either an error message ('Left') or the parsed 'AtsMessage' ('Right').
+parse :: String -> Either String AtsMessage
 parse = runParser parser

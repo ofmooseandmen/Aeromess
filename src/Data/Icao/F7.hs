@@ -11,6 +11,8 @@ module Data.Icao.F7
     , parser
     ) where
 
+import Control.Monad.Fail
+import Prelude hiding (fail)
 import Data.Aeromess.Parser
 import Data.Char
 import Data.Maybe ()
@@ -55,7 +57,7 @@ parser = do
 -- | 'AircraftIdentification' smart constructor. Fails if given identification is
 -- not valid.
 mkAircraftIdentification
-    :: (Monad m)
+    :: (MonadFail m)
     => String -> m AircraftIdentification
 mkAircraftIdentification s
     | null s = fail "empty aicraft identification"
@@ -71,7 +73,7 @@ validCode c
 
 -- | 'SsrCode' smart constructor. Fails if given code value is not valid.
 mkSsrCode
-    :: (Monad m)
+    :: (MonadFail m)
     => String -> m SsrCode
 mkSsrCode c
     | validCode c = return (SsrCode c)

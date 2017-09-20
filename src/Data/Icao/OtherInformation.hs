@@ -28,6 +28,8 @@ module Data.Icao.OtherInformation
     , mkSelCalCode
     ) where
 
+import Control.Monad.Fail
+import Prelude hiding (fail)
 import Data.Char
 import Data.Icao.Lang
 import Data.Icao.Location
@@ -141,7 +143,7 @@ isValidPair s = allowedLetter h && allowedLetter t && h < t
 -- | 'SelCalCode' smart constructor. Fails if given string is not a valid
 -- SELCAL code.
 mkSelCalCode
-    :: (Monad m)
+    :: (MonadFail m)
     => String -> m SelCalCode
 mkSelCalCode s
     | isValid s = return (SelCalCode s)

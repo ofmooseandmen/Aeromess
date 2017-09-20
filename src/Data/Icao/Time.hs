@@ -20,6 +20,8 @@ module Data.Icao.Time
     , mkDayTime
     ) where
 
+import Control.Monad.Fail
+import Prelude hiding (fail)
 import Data.Aeromess.Parser
 import Data.Either ()
 
@@ -66,23 +68,23 @@ dayTimeParser = do
     mkDayTime dd (hour hhmm) (minute hhmm)
 
 -- | Parses the given textual representation of a 'Hhmm'.
--- return either an 'Error' ('Left') or the parsed 'Hhmm' ('Right').
-parseHhmm :: String -> Either Error Hhmm
+-- return either an error message ('Left') or the parsed 'Hhmm' ('Right').
+parseHhmm :: String -> Either String Hhmm
 parseHhmm = runParser hhmmParser
 
 -- | Parses the given textual representation of a 'Date'.
--- return either an 'Error' ('Left') or the parsed 'Date' ('Right').
-parseDate :: String -> Either Error Date
+-- return either an error message ('Left') or the parsed 'Date' ('Right').
+parseDate :: String -> Either String Date
 parseDate = runParser dateParser
 
 -- | Parses the given textual representation of a 'DayTime'.
--- return either an 'Error' ('Left') or the parsed 'DayTime' ('Right').
-parseDayTime :: String -> Either Error DayTime
+-- return either an error message ('Left') or the parsed 'DayTime' ('Right').
+parseDayTime :: String -> Either String DayTime
 parseDayTime = runParser dayTimeParser
 
 -- | 'Hhmm' smart constructor. Fails if given hour and/or minute are not valid.
 mkHhmm
-    :: (Monad m)
+    :: (MonadFail m)
     => Int -> Int -> m Hhmm
 mkHhmm hh mm
     | hh < 0 || hh > 23 = fail ("invalid hour=" ++ show hh)
@@ -91,7 +93,7 @@ mkHhmm hh mm
 
 -- | 'Date' smart constructor. Fails if given year and/or month and/or day are not valid.
 mkDate
-    :: (Monad m)
+    :: (MonadFail m)
     => Int -> Int -> Int -> m Date
 mkDate yy mm dd
     | yy < 0 || yy > 99 = fail ("invalid year=" ++ show yy)
@@ -101,7 +103,7 @@ mkDate yy mm dd
 
 -- | 'DayTime' smart constructor. Fails if given day and/or hour and/or minute are not valid.
 mkDayTime
-    :: (Monad m)
+    :: (MonadFail m)
     => Int -> Int -> Int -> m DayTime
 mkDayTime dd hh mm
     | dd < 1 || dd > 31 = fail ("invalid day=" ++ show dd)

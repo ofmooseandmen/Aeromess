@@ -68,18 +68,18 @@ dayTimeParser = do
     mkDayTime dd (hour hhmm) (minute hhmm)
 
 -- | Parses the given textual representation of a 'Hhmm'.
--- return either an error message ('Left') or the parsed 'Hhmm' ('Right').
-parseHhmm :: String -> Either String Hhmm
+-- return either an 'Error' ('Left') or the parsed 'Hhmm' ('Right').
+parseHhmm :: String -> Either Error Hhmm
 parseHhmm = runParser hhmmParser
 
 -- | Parses the given textual representation of a 'Date'.
--- return either an error message ('Left') or the parsed 'Date' ('Right').
-parseDate :: String -> Either String Date
+-- return either an 'Error' ('Left') or the parsed 'Date' ('Right').
+parseDate :: String -> Either Error Date
 parseDate = runParser dateParser
 
 -- | Parses the given textual representation of a 'DayTime'.
--- return either an error message ('Left') or the parsed 'DayTime' ('Right').
-parseDayTime :: String -> Either String DayTime
+-- return either an 'Error' ('Left') or the parsed 'DayTime' ('Right').
+parseDayTime :: String -> Either Error DayTime
 parseDayTime = runParser dayTimeParser
 
 -- | 'Hhmm' smart constructor. Fails if given hour and/or minute are not valid.

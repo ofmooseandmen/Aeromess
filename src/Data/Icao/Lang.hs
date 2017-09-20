@@ -8,8 +8,8 @@ module Data.Icao.Lang
     ) where
 
 import Control.Monad.Fail
-import Prelude hiding (fail)
 import Data.Aeromess.Parser
+import Prelude hiding (fail)
 
 -- | Free text, containing any character but '/', '-' and parentheses.
 newtype FreeText =

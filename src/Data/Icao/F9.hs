@@ -10,10 +10,10 @@ module Data.Icao.F9
     ) where
 
 import Control.Monad.Fail
-import Prelude hiding (fail)
 import Data.Aeromess.Parser
 import Data.Char
 import Data.Maybe (fromMaybe)
+import Prelude hiding (fail)
 
 -- | Aircraft type, e.g. A320
 newtype AircraftType =

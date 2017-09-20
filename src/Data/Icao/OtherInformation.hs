@@ -3,9 +3,8 @@
 -- This field is a collection of switches all optional, use the withXXXX function to
 -- build a new instance starting from 'emptyOtherInformation'.
 module Data.Icao.OtherInformation
-    (
     -- * Data
-      OtherInformation(..)
+    ( OtherInformation(..)
     , PbnCapabilityCode(..)
     , SpecicalHandlingReason(..)
     , EstimatedElapsedTime(..)
@@ -29,13 +28,13 @@ module Data.Icao.OtherInformation
     ) where
 
 import Control.Monad.Fail
-import Prelude hiding (fail)
 import Data.Char
 import Data.Icao.Lang
 import Data.Icao.Location
 import Data.Icao.Time
 import Data.List
 import Data.Maybe ()
+import Prelude hiding (fail)
 
 -- | Code describing PBN (Performance Base Navigation) capabilities.
 -- Provides both RNAV (Area Navigation) and RNP (Required Navigation Performance) capabilities.

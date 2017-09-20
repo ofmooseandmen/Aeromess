@@ -12,10 +12,10 @@ module Data.Icao.F7
     ) where
 
 import Control.Monad.Fail
-import Prelude hiding (fail)
 import Data.Aeromess.Parser
 import Data.Char
 import Data.Maybe ()
+import Prelude hiding (fail)
 
 -- | Aircraft identification, a.k.a. call-sign, maximum of 7 uppercase/digit characters.
 newtype AircraftIdentification =

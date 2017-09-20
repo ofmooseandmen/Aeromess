@@ -69,15 +69,15 @@ module Data.Wmo.AerodromeReport
     , parse
     ) where
 
-import Control.Monad.Fail
-import Prelude hiding (fail)
 import Control.Monad ((<=<))
+import Control.Monad.Fail
 import Data.Aeromess.Parser
 import Data.Char (isDigit)
 import Data.Icao.Lang
 import Data.Icao.Location
 import Data.Icao.Time
 import Data.Maybe
+import Prelude hiding (fail)
 
 -- | type of report.
 data ReportType
@@ -124,11 +124,11 @@ data VisibilityTendency
 
 -- | Visibility distance in appropriate unit.
 data VisibilityDistance
-    = VisibilityDistanceMetres { vdMeters :: Int } -- ^ metre, standard unit.
-    | VisibilityDistanceFeet { vdFeet :: Int } -- ^ feet, used by FAA for RVR.
+    = VisibilityDistanceMetres { vdMeters :: Int} -- ^ metre, standard unit.
+    | VisibilityDistanceFeet { vdFeet :: Int} -- ^ feet, used by FAA for RVR.
     | VisibilityDistanceMiles { vdMiles :: Maybe Int -- ^ mile, formally statute mile, used by US/Canada.
-                              , vdMileFraction :: Maybe (Int, Int) -- ^ mile fraction.
-                               }
+                             ,  vdMileFraction :: Maybe (Int, Int) -- ^ mile fraction.
+                              }
     deriving (Eq, Show)
 
 -- | Runway designator: 2 digits possibly appended with L(eft) C(entral) or R(ight) for parallel runways.
@@ -362,43 +362,45 @@ cavok m = isNothing (reportVisibility m) && null (reportWeather m) && null (repo
 -- >  example =
 -- >    Report "ESSA" (18, 21, 48) [withWindDirection 150, withWindSpeed 40 Nothing KT]
 --
-metar ::
-       (MonadFail m)
-    => String
-    -> (Int, Int, Int)
-    -> [AerodromeReport -> m AerodromeReport]
-    -> m AerodromeReport
+metar
+    :: (MonadFail m)
+    => String -> (Int, Int, Int) -> [AerodromeReport -> m AerodromeReport] -> m AerodromeReport
 metar st dt setters = defaultReport METAR st dt >>= with setters
 
 -- | Builds a special 'AerodromeReport' (SPECI) for the given station and time and all given
 -- setter.
 -- see 'metar'.
-speci ::
-       (MonadFail m)
-    => String
-    -> (Int, Int, Int)
-    -> [AerodromeReport -> m AerodromeReport]
-    -> m AerodromeReport
+speci
+    :: (MonadFail m)
+    => String -> (Int, Int, Int) -> [AerodromeReport -> m AerodromeReport] -> m AerodromeReport
 speci st dt setters = defaultReport SPECI st dt >>= with setters
 
 -- | Modifies the given @report@ by running each given setter.
-with :: (MonadFail m) => [AerodromeReport -> m AerodromeReport] -> AerodromeReport -> m AerodromeReport
+with
+    :: (MonadFail m)
+    => [AerodromeReport -> m AerodromeReport] -> AerodromeReport -> m AerodromeReport
 with = foldl (<=<) return
 
 -- | Modifies the given @report@ by setting the modifiers (COR, AUTO, MIS).
-withModifiers :: (MonadFail m) => (Bool, Bool, Bool) -> AerodromeReport -> m AerodromeReport
+withModifiers
+    :: (MonadFail m)
+    => (Bool, Bool, Bool) -> AerodromeReport -> m AerodromeReport
 withModifiers modifs report = do
     let (cor, aut, mis) = modifs
     return report {reportModifiers = ReportModifiers cor aut mis}
 
 -- | Modifies the given @report@ by setting the wind direction.
-withWindDirection :: (MonadFail m) => Int -> AerodromeReport -> m AerodromeReport
+withWindDirection
+    :: (MonadFail m)
+    => Int -> AerodromeReport -> m AerodromeReport
 withWindDirection dir report = do
     _dir <- mkWindDirection dir
     return report {reportWind = windWithDirection _dir (reportWind report)}
 
 -- | Modifies the given @report@ by setting the wind speed (@spd@) and gust (@gst).
-withWindSpeed :: (MonadFail m) => Int -> Maybe Int -> SpeedUnit -> AerodromeReport -> m AerodromeReport
+withWindSpeed
+    :: (MonadFail m)
+    => Int -> Maybe Int -> SpeedUnit -> AerodromeReport -> m AerodromeReport
 withWindSpeed spd gst ut report = do
     _spd <- mkWindSpeed spd ut
     _gst <-
@@ -408,7 +410,9 @@ withWindSpeed spd gst ut report = do
     return report {reportWind = windWithSpeed _spd _gst (reportWind report)}
 
 -- | Modifies the given @report@ by setting the wind variation.
-withWindVariation :: (MonadFail m) => Int -> Int -> AerodromeReport -> m AerodromeReport
+withWindVariation
+    :: (MonadFail m)
+    => Int -> Int -> AerodromeReport -> m AerodromeReport
 withWindVariation lft rgt report = do
     _lft <- mkWindDirection lft
     _rgt <- mkWindDirection rgt
@@ -418,33 +422,35 @@ withWindVariation lft rgt report = do
 
 -- | Modifies the given @report@ by setting the prevailing visibility according to the WMO standard.
 -- the visibility is expressed in meters.
-withPrevailingVisibility :: (MonadFail m) => Int -> AerodromeReport -> m AerodromeReport
+withPrevailingVisibility
+    :: (MonadFail m)
+    => Int -> AerodromeReport -> m AerodromeReport
 withPrevailingVisibility dst report = do
     _dst <- mkVisibilityDistanceMeter dst
     return report {reportVisibility = visiblityWithPrevailing _dst (reportVisibility report)}
 
 -- | Modifies the given @report@ by setting the prevailing visibility according to the FAA standard.
 -- the visibility is expressed in statue miles (@mile@ and @fraction@).
-withFaaPrevailingVisibility ::
-       (MonadFail m) => Maybe Int -> Maybe (Int, Int) -> AerodromeReport -> m AerodromeReport
-withFaaPrevailingVisibility Nothing Nothing _ =
-    fail "invalid prevailing visibility, at least one of mile or fraction is required"
+withFaaPrevailingVisibility
+    :: (MonadFail m)
+    => Maybe Int -> Maybe (Int, Int) -> AerodromeReport -> m AerodromeReport
 withFaaPrevailingVisibility m f report = do
     _dst <- mkVisibilityDistanceMile m f
     return report {reportVisibility = visiblityWithPrevailing _dst (reportVisibility report)}
 
 -- | Modifies the given @report@ by setting the lowest visibility (meter) and for a direction (if any).
 -- Note: this is not supported by the FAA standard.
-withLowestVisibility ::
-       (MonadFail m) => Int -> Maybe CompassPoint -> AerodromeReport -> m AerodromeReport
+withLowestVisibility
+    :: (MonadFail m)
+    => Int -> Maybe CompassPoint -> AerodromeReport -> m AerodromeReport
 withLowestVisibility dst cp report = do
     _dst <- mkVisibilityDistanceMeter dst
     return report {reportVisibility = visiblityWithLowest _dst cp (reportVisibility report)}
 
 -- | Modifies the given @report@ by adding a runway visual range (RVR) according to the WMO standard.
 -- the runway visibility is expressed in meters.
-withRunwayVisualRange ::
-       (MonadFail m)
+withRunwayVisualRange
+    :: (MonadFail m)
     => String
     -> Int
     -> Maybe ExtremeRvr
@@ -462,8 +468,8 @@ withRunwayVisualRange rwy dst ext tdc report = do
 
 -- | Modifies the given @report@ by adding the runway visual range (RVR) according to the FAA standard.
 -- the runway visibility is expressed in feet.
-withFaaRunwayVisualRange ::
-       (MonadFail m)
+withFaaRunwayVisualRange
+    :: (MonadFail m)
     => String
     -> Int
     -> Maybe ExtremeRvr
@@ -480,8 +486,8 @@ withFaaRunwayVisualRange rwy dst ext tdc report = do
         }
 
 -- | Modifies the given @report@ by adding the weather observation.
-withWeather ::
-       (MonadFail m)
+withWeather
+    :: (MonadFail m)
     => Maybe WeatherQualifier
     -> Maybe WeatherDescriptor
     -> [WeatherPhenomenon]
@@ -521,8 +527,8 @@ parser = do
     return (AerodromeReport rt m st dt wd vs we cl Nothing Nothing Nothing Nothing)
 
 -- | Parses the given textual representation of a 'AerodromeReport' using 'Parser'.
--- return either an error message ('Left') or the parsed 'AerodromeReport' ('Right').
-parse :: String -> Either String AerodromeReport
+-- return either an 'Error' ('Left') or the parsed 'AerodromeReport' ('Right').
+parse :: String -> Either Error AerodromeReport
 parse = runParser parser
 
 -- ---------------------------
@@ -531,7 +537,9 @@ parse = runParser parser
 noModifiers :: ReportModifiers
 noModifiers = ReportModifiers False False False
 
-mkRunwayDesignator :: (MonadFail m) => String -> m RunwayDesignator
+mkRunwayDesignator
+    :: (MonadFail m)
+    => String -> m RunwayDesignator
 mkRunwayDesignator s
     | length s /= 2 && length s /= 3 = fail ("invalid runway designator=" ++ s)
     | not (all isDigit (take 2 s)) = fail ("invalid runway designator=" ++ s)
@@ -539,31 +547,42 @@ mkRunwayDesignator s
         fail ("invalid runway designator=" ++ s)
     | otherwise = return (RunwayDesignator s)
 
-mkWindSpeed :: (MonadFail m) => Int -> SpeedUnit -> m WindSpeed
+mkWindSpeed
+    :: (MonadFail m)
+    => Int -> SpeedUnit -> m WindSpeed
 mkWindSpeed s u
-    | s < 0 || s > 99 = fail ("invalid wind speed=" ++ show s)
+    | s < 0 || s > 99 = fail ("invalid wind speed [" ++ show u ++ "]=" ++ show s)
     | otherwise = return (WindSpeed u s)
 
-mkWindDirection :: (MonadFail m) => Int -> m Int
+mkWindDirection
+    :: (MonadFail m)
+    => Int -> m Int
 mkWindDirection d
-    | d < 0 || d > 359 = fail ("invalid degrees=" ++ show d)
+    | d < 0 || d > 359 = fail ("invalid wind direction [degrees]=" ++ show d)
     | otherwise = return d
 
-mkVisibilityDistanceMeter :: (MonadFail m) => Int -> m VisibilityDistance
+mkVisibilityDistanceMeter
+    :: (MonadFail m)
+    => Int -> m VisibilityDistance
 mkVisibilityDistanceMeter m
-    | m < 0 || m > 9999 = fail ("invalid distance [meter]=" ++ show m)
+    | m < 0 || m > 9999 = fail ("invalid visibility distance [meter]=" ++ show m)
     | otherwise = return (VisibilityDistanceMetres m)
 
-mkVisibilityDistanceMile :: (MonadFail m) => Maybe Int -> Maybe (Int, Int) -> m VisibilityDistance
+mkVisibilityDistanceMile
+    :: (MonadFail m)
+    => Maybe Int -> Maybe (Int, Int) -> m VisibilityDistance
+mkVisibilityDistanceMile Nothing Nothing = fail "invalid visibility distance [mile]"
 mkVisibilityDistanceMile m f
-    | maybe False (< 0) m || maybe False (> 99) m = fail ("invalid distance [mile]=" ++ show m)
+    | maybe False (< 0) m || maybe False (> 99) m = fail ("invalid visibility distance [mile]=" ++ show m)
     | maybe False (< 0) (fmap fst f) || maybe False (> 9) (fmap fst f) =
-        fail ("invalid distance [fraction]=" ++ show f)
+        fail ("invalid visibility distance [fraction]=" ++ show f)
     | maybe False (< 0) (fmap snd f) || maybe False (> 9) (fmap snd f) =
-        fail ("invalid distance [fraction]=" ++ show f)
+        fail ("invalid visibility distance [fraction]=" ++ show f)
     | otherwise = return (VisibilityDistanceMiles m f)
 
-mkVisibilityDistanceFeet :: (MonadFail m) => Int -> m VisibilityDistance
+mkVisibilityDistanceFeet
+    :: (MonadFail m)
+    => Int -> m VisibilityDistance
 mkVisibilityDistanceFeet m
     | m < 0 || m > 9999 = fail ("invalid distance [feet]=" ++ show m)
     | otherwise = return (VisibilityDistanceFeet m)
@@ -574,7 +593,9 @@ mkVisibilityDistanceFeet m
 -- | default 'AerodromeReport' of given type for given station and time
 -- No wind, and CAVOK conditions.
 -- TODO: ISA conditions (pressure and temperature)
-defaultReport :: (MonadFail m) => ReportType -> String -> (Int, Int, Int) -> m AerodromeReport
+defaultReport
+    :: (MonadFail m)
+    => ReportType -> String -> (Int, Int, Int) -> m AerodromeReport
 defaultReport t st (d, h, m) = do
     _st <- mkAerodrome st
     _dt <- mkDayTime d h m
@@ -597,8 +618,10 @@ visiblityWithPrevailing :: VisibilityDistance -> Maybe Visibility -> Maybe Visib
 visiblityWithPrevailing dst Nothing = Just (Visibility dst Nothing Nothing [])
 visiblityWithPrevailing dst (Just v) = Just (v {vPrevailing = dst})
 
-visiblityWithLowest ::
-       VisibilityDistance -> Maybe CompassPoint -> Maybe Visibility -> Maybe Visibility
+visiblityWithLowest :: VisibilityDistance
+                    -> Maybe CompassPoint
+                    -> Maybe Visibility
+                    -> Maybe Visibility
 visiblityWithLowest dst cp Nothing = Just (Visibility (VisibilityDistanceMetres 0) (Just dst) cp [])
 visiblityWithLowest dst cp (Just v) = Just (v {vLowest = Just dst, vLowestDirection = cp})
 

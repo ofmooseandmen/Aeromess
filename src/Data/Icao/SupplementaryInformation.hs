@@ -3,9 +3,8 @@
 -- This field is a collection of switches all optional, use the withXXXX functions to
 -- build a new instance starting from 'emptySupplementaryInformation'.
 module Data.Icao.SupplementaryInformation
-    (
     -- * Data
-      PersonsOnBoard
+    ( PersonsOnBoard
     , Transmitter(..)
     , SurvivalEquipment(..)
     , LifeJacket(..)
@@ -28,11 +27,11 @@ module Data.Icao.SupplementaryInformation
     ) where
 
 import Control.Monad.Fail
-import Prelude hiding (fail)
 import Data.Char (isUpper)
 import Data.Icao.Lang
 import Data.Icao.Time
 import Data.Maybe ()
+import Prelude hiding (fail)
 
 -- | Persons on board the aircraft.
 newtype PersonsOnBoard =

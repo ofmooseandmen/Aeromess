@@ -2,9 +2,8 @@
 -- Provides data types and functions pertaining to locations
 -- in accordance with the ICAO 4444 edition 2016 standard.
 module Data.Icao.Location
-    (
     -- * Data
-      Aerodrome
+    ( Aerodrome
     , Bearing
     , Distance
     , Latitude
@@ -26,11 +25,11 @@ module Data.Icao.Location
     ) where
 
 import Control.Monad.Fail
-import Prelude hiding (fail)
 import Data.Aeromess.Parser
 import Data.Char
 import Data.Either ()
 import Data.Maybe
+import Prelude hiding (fail)
 
 -- | the name of an aerodrome, 4 uppercase characters.
 newtype Aerodrome =
@@ -92,8 +91,8 @@ aerodromeParser = do
     mkAerodrome a
 
 -- | Parses the given textual representation of an 'Aerodrome'.
--- return either an error message ('Left') or the parsed 'Aerodrome' ('Right').
-parseAerodrome :: String -> Either String Aerodrome
+-- return either an 'Error' ('Left') or the parsed 'Aerodrome' ('Right').
+parseAerodrome :: String -> Either Error Aerodrome
 parseAerodrome = runParser aerodromeParser
 
 -- | 'Aerodrome' smart constructor. Fails if the given name is not a valid.
@@ -110,8 +109,8 @@ significantPointParser :: Parser SignificantPoint
 significantPointParser = namedPointParser <|> latLongParser
 
 -- | Parses the given textual representation of a 'SignificantPoint'.
--- return either an error message ('Left') or the parsed 'SignificantPoint' ('Right').
-parseSignificantPoint :: String -> Either String SignificantPoint
+-- return either an 'Error' ('Left') or the parsed 'SignificantPoint' ('Right').
+parseSignificantPoint :: String -> Either Error SignificantPoint
 parseSignificantPoint = runParser significantPointParser
 
 -- | 'CodedDesignator' 'SignificantPoint' smart constructor. Fails if the given name

@@ -1,5 +1,6 @@
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE TypeFamilies #-}
+{-# OPTIONS_GHC -fno-warn-orphans #-}
 
 -- |
 -- Aeromess Parser.
@@ -42,6 +43,7 @@ import Data.Functor.Identity
 import Data.List hiding (words)
 import Data.Maybe
 import Data.Ord (comparing)
+import Data.String (IsString, fromString)
 import Prelude hiding (words, fail)
 import qualified Text.Parsec as P
 import qualified Text.Parsec.Char as C
@@ -53,12 +55,21 @@ data Error = Error
     , column :: Int
     } deriving (Eq, Show)
 
+-- | 'IsString' instance for 'Error', 'column' is set to 0.
+instance IsString Error where
+    fromString s = Error s 0
+
 -- | Parser.
 type Parser a = P.ParsecT String () Identity a
 
--- | 'MonadFail' implementation for 'Parser': @fail@ calls 'unexpected'.
+-- | 'MonadFail' instance for 'Parser': @fail@ calls 'unexpected'.
 instance MonadFail (P.ParsecT String () Identity) where
     fail = unexpected
+
+-- | 'MonadFail' instance for 'Either'.
+instance IsString str =>
+         MonadFail (Either str) where
+    fail = Left . fromString
 
 -- | Tries to apply @p1@, if it fails applies @p2@.
 (<|>) :: Parser a -> Parser a -> Parser a
@@ -134,7 +145,7 @@ optional = P.optionMaybe
 
 -- | Parses the given text using the given parser.
 -- Returns either an error message ('Left') or the parsed result ('Right').
-runParser :: Parser a -> String -> Either String a
+runParser :: Parser a -> String -> Either Error a
 runParser p s = mapLeft err (P.parse p "" s)
 
 -- | Parses a '/' character
@@ -175,8 +186,8 @@ words :: Parser String
 words = some (P.upper <|> space)
 
 -- Private
-err :: E.ParseError -> String
-err e = errMessage e ++ " @ column " ++ show (P.sourceColumn (P.errorPos e))
+err :: E.ParseError -> Error
+err e = Error (errMessage e) (col e)
 
 errMessage :: E.ParseError -> String
 errMessage e = E.messageString (head (E.errorMessages e))
@@ -184,3 +195,6 @@ errMessage e = E.messageString (head (E.errorMessages e))
 mapLeft :: (a -> c) -> Either a b -> Either c b
 mapLeft f (Left x) = Left (f x)
 mapLeft _ (Right x) = Right x
+
+col :: E.ParseError -> Int
+col e = read (show (P.sourceColumn (P.errorPos e)))

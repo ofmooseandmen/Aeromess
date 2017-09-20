@@ -9,9 +9,11 @@ module Data.Icao.F9
     , parser
     ) where
 
+import Control.Monad.Fail
 import Data.Aeromess.Parser
 import Data.Char
 import Data.Maybe (fromMaybe)
+import Prelude hiding (fail)
 
 -- | Aircraft type, e.g. A320
 newtype AircraftType =
@@ -36,7 +38,7 @@ data Data = Data
 -- | 'AircraftType' smart constructor. Fails if given identification is
 -- not valid.
 mkAircraftType
-    :: (Monad m)
+    :: (MonadFail m)
     => String -> m AircraftType
 mkAircraftType s
     | length s < 2 || length s > 4 = fail "aircraft type must be 2-4 characters"

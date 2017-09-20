@@ -130,13 +130,7 @@ depParser' = do
     f13 <- F13.parser
     f16Ades <- F16.adesParser
     f18 <- F18.parser
-    return
-        ( (F7.aircraftIdentification f7)
-        , (F7.ssrCode f7)
-        , (F13.adep f13)
-        , (F13.time f13)
-        , f16Ades
-        , f18)
+    return (F7.aircraftIdentification f7, F7.ssrCode f7, F13.adep f13, F13.time f13, f16Ades, f18)
 
 -- | 'DepartureMessage' parser.
 depParser :: Parser AtsMessage

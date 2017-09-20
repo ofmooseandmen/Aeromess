@@ -1,3 +1,7 @@
+{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE TypeFamilies #-}
+{-# OPTIONS_GHC -fno-warn-orphans #-}
+
 -- |
 -- Aeromess Parser.
 -- Allows to abstract away the choice of the underlying parser
@@ -33,12 +37,14 @@ module Data.Aeromess.Parser
     ) where
 
 import Control.Monad (mplus)
+import Control.Monad.Fail
 import Data.Either
 import Data.Functor.Identity
 import Data.List hiding (words)
 import Data.Maybe
 import Data.Ord (comparing)
-import Prelude hiding (words)
+import Data.String (IsString, fromString)
+import Prelude hiding (words, fail)
 import qualified Text.Parsec as P
 import qualified Text.Parsec.Char as C
 import qualified Text.Parsec.Error as E
@@ -49,8 +55,21 @@ data Error = Error
     , column :: Int
     } deriving (Eq, Show)
 
+-- | 'IsString' instance for 'Error', 'column' is set to 0.
+instance IsString Error where
+    fromString s = Error s 0
+
 -- | Parser.
 type Parser a = P.ParsecT String () Identity a
+
+-- | 'MonadFail' instance for 'Parser': @fail@ calls 'unexpected'.
+instance MonadFail (P.ParsecT String () Identity) where
+    fail = unexpected
+
+-- | 'MonadFail' instance for 'Either'.
+instance IsString str =>
+         MonadFail (Either str) where
+    fail = Left . fromString
 
 -- | Tries to apply @p1@, if it fails applies @p2@.
 (<|>) :: Parser a -> Parser a -> Parser a
@@ -125,7 +144,7 @@ optional :: Parser a -> Parser (Maybe a)
 optional = P.optionMaybe
 
 -- | Parses the given text using the given parser.
--- Returns either an 'Error' ('Left') or the parsed result ('Right').
+-- Returns either an error message ('Left') or the parsed result ('Right').
 runParser :: Parser a -> String -> Either Error a
 runParser p s = mapLeft err (P.parse p "" s)
 

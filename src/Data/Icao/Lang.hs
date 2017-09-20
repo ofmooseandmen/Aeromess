@@ -7,7 +7,9 @@ module Data.Icao.Lang
     , mkFreeText
     ) where
 
+import Control.Monad.Fail
 import Data.Aeromess.Parser
+import Prelude hiding (fail)
 
 -- | Free text, containing any character but '/', '-' and parentheses.
 newtype FreeText =
@@ -36,7 +38,7 @@ endOfFieldParser = do
 
 -- | 'FreeText' smart constructor. Fails if given string is not a valid free text.
 mkFreeText
-    :: (Monad m)
+    :: (MonadFail m)
     => String -> m FreeText
 mkFreeText s
     | null s = fail "empty free text"

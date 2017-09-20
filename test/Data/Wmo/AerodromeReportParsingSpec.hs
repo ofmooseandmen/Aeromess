@@ -1,11 +1,12 @@
-module Data.Wmo.AerodromeReportSpec
+module Data.Wmo.AerodromeReportParsingSpec
     ( spec
     ) where
 
 import Data.Wmo.AerodromeReport
 import Test.Hspec
 
--- | Most METARs retrieved from <https://aviationweather.gov/metar/data>
+-- | Tests the parsing of WMO METAR/SPECI messages.
+-- Most METARs retrieved from <https://aviationweather.gov/metar/data>
 spec :: Spec
 spec =
     describe "WMO METAR paser" $ do

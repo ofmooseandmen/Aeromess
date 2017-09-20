@@ -25,9 +25,10 @@ module Data.Wmo.AerodromeReport
     , WindSpeed(wsUnit, wsValue)
     , Wind(wDirection, wSpeed, wGust, wVariation)
     , VisibilityTendency(..)
-    , VisibilityDistance(VisibilityDistanceMetres,
-                   VisibilityDistanceFeet, VisibilityDistanceMiles, vdMeters, vdFeet,
-                   vdMiles, vdMileFraction)
+    , VDMeters(vdMeters)
+    , VDFeet(vdFeet)
+    , VDMiles(vdMiles, vdMileFraction)
+    , VisibilityDistance(..)
     , RunwayDesignator
     , ExtremeRvr(..)
     , RunwayVisualRange(rvrDesignator, rvrMeanVisibility,
@@ -40,7 +41,7 @@ module Data.Wmo.AerodromeReport
     , Weather(wQualifier, wDescriptor, wPhenomenon)
     , CloudType(..)
     , CloudAmount(caHeight, caType)
-    , ObscuredSky(osVerticalVisibility)
+    , VerticalVisibility(vvExtent)
     , Clouds(..)
     , Pressure(pUnit, pValue)
     , ReportModifiers(reportCorrected, reportAuto, reportMissed)
@@ -122,17 +123,30 @@ data VisibilityTendency
     | NoChange
     deriving (Eq, Show)
 
+-- | Visibility distance in meters.
+newtype VDMeters = VDMeters
+    { vdMeters :: Int
+    } deriving (Eq, Show)
+
+-- | Visibility distance in feet.
+newtype VDFeet = VDFeet
+    { vdFeet :: Int
+    } deriving (Eq, Show)
+
+-- | Visibility distance in miles (formally statute mile).
+data VDMiles = VDMiles
+    { vdMiles :: Maybe Int -- ^ mile, formally statute mile, used by FAA.
+    , vdMileFraction :: Maybe (Int, Int)
+    } deriving (Eq, Show)
+
 -- | Visibility distance in appropriate unit.
 data VisibilityDistance
-    = VisibilityDistanceMetres { vdMeters :: Int} -- ^ metre, standard unit.
-    | VisibilityDistanceFeet { vdFeet :: Int} -- ^ feet, used by FAA for RVR.
-    | VisibilityDistanceMiles { vdMiles :: Maybe Int -- ^ mile, formally statute mile, used by US/Canada.
-                             ,  vdMileFraction :: Maybe (Int, Int) -- ^ mile fraction.
-                              }
+    = VisibilityDistanceMetres VDMeters -- ^ metre, standard unit.
+    | VisibilityDistanceFeet VDFeet -- ^ feet, used by FAA for RVR.
+    | VisibilityDistanceMiles VDMiles -- ^ mile, formally statute mile, used by FAA.
     deriving (Eq, Show)
 
 -- | Runway designator: 2 digits possibly appended with L(eft) C(entral) or R(ight) for parallel runways.
--- TODO support ALL, i.e. RunwayDesignator = All | RunwayDesignator String
 newtype RunwayDesignator =
     RunwayDesignator String
     deriving (Eq, Show)
@@ -233,13 +247,13 @@ data CloudType
 
 -- | Amount of clouds.
 data CloudAmount = CloudAmount
-    { caHeight :: Int -- ^ height of cloud base in meters.
+    { caHeight :: Maybe Int -- ^ height of cloud base in hundreds of feet.
     , caType :: Maybe CloudType -- ^ type of clouds if relevant.
     } deriving (Eq, Show)
 
--- | Obscured sky.
-newtype ObscuredSky = ObscuredSky
-    { osVerticalVisibility :: Int -- ^ vertical visibility in meters.
+-- | Vertical visibility in hundreds of feet.
+newtype VerticalVisibility = VerticalVisibility
+    { vvExtent :: Maybe Int -- ^ extent of vertical visibility in hundreds of feet above field elevation.
     } deriving (Eq, Show)
 
 -- | Clouds group data.
@@ -248,7 +262,7 @@ data Clouds
     | Scattered CloudAmount -- ^ Scattered amount of clouds.
     | Broken CloudAmount -- ^ broken amount of clouds.
     | Overcast CloudAmount -- ^ overcast amount of clouds.
-    | Obscured ObscuredSky -- ^ sky obscured,
+    | ObscuredSky VerticalVisibility -- ^ sky obscured.
     | SkyClear
     | NoCloudBelow1500
     | NoCloudBelow3600 -- ^ used in automatic observations.
@@ -566,26 +580,43 @@ mkVisibilityDistanceMeter
     => Int -> m VisibilityDistance
 mkVisibilityDistanceMeter m
     | m < 0 || m > 9999 = fail ("invalid visibility distance [meter]=" ++ show m)
-    | otherwise = return (VisibilityDistanceMetres m)
+    | otherwise = return (VisibilityDistanceMetres (VDMeters m))
 
 mkVisibilityDistanceMile
     :: (MonadFail m)
     => Maybe Int -> Maybe (Int, Int) -> m VisibilityDistance
 mkVisibilityDistanceMile Nothing Nothing = fail "invalid visibility distance [mile]"
 mkVisibilityDistanceMile m f
-    | maybe False (< 0) m || maybe False (> 99) m = fail ("invalid visibility distance [mile]=" ++ show m)
+    | maybe False (< 0) m || maybe False (> 99) m =
+        fail ("invalid visibility distance [mile]=" ++ show m)
     | maybe False (< 0) (fmap fst f) || maybe False (> 9) (fmap fst f) =
         fail ("invalid visibility distance [fraction]=" ++ show f)
     | maybe False (< 0) (fmap snd f) || maybe False (> 9) (fmap snd f) =
         fail ("invalid visibility distance [fraction]=" ++ show f)
-    | otherwise = return (VisibilityDistanceMiles m f)
+    | otherwise = return (VisibilityDistanceMiles (VDMiles m f))
 
 mkVisibilityDistanceFeet
     :: (MonadFail m)
     => Int -> m VisibilityDistance
 mkVisibilityDistanceFeet m
-    | m < 0 || m > 9999 = fail ("invalid distance [feet]=" ++ show m)
-    | otherwise = return (VisibilityDistanceFeet m)
+    | m < 0 || m > 9999 = fail ("invalid visibility distance [feet]=" ++ show m)
+    | otherwise = return (VisibilityDistanceFeet (VDFeet m))
+
+mkCloudAmount
+    :: (MonadFail m)
+    => Maybe Int -> Maybe CloudType -> m CloudAmount
+mkCloudAmount Nothing ct = return (CloudAmount Nothing ct)
+mkCloudAmount (Just ft) ct
+    | ft < 0 || ft > 999 = fail ("invalid cloud amount height [hundreds feet]=" ++ show ft)
+    | otherwise = return (CloudAmount (Just ft) ct)
+
+mkObscuredSky
+    :: (MonadFail m)
+    => Maybe Int -> m Clouds
+mkObscuredSky Nothing = return (ObscuredSky (VerticalVisibility Nothing))
+mkObscuredSky (Just ft)
+    | ft < 0 || ft > 999 = fail ("invalid vertical visibility [hundreds feet]=" ++ show ft)
+    | otherwise = return (ObscuredSky (VerticalVisibility (Just ft)))
 
 -- ------------------------
 -- Private builder helpers.
@@ -696,8 +727,8 @@ rvrParser = do
     u <- optional (string "FT")
     d <-
         case u of
-            Just _ -> return (VisibilityDistanceFeet _d)
-            _ -> return (VisibilityDistanceMetres _d)
+            Just _ -> return (VisibilityDistanceFeet (VDFeet _d))
+            _ -> return (VisibilityDistanceMetres (VDMeters _d))
     _t <- optional (oneOf "UDN")
     t <-
         case _t of
@@ -836,6 +867,68 @@ weatherParser = do
 weathersParser :: Parser [Weather]
 weathersParser = many (try weatherParser)
 
+noCloudParser :: Parser [Clouds]
+noCloudParser = do
+    key <- choice [string "NSC", string "NCD", string "CLR", string "SKC"]
+    _ <- space
+    case key of
+        "NSC" -> return [NoCloudBelow1500]
+        "NCD" -> return [SkyClear]
+        "CLR" -> return [NoCloudBelow3600]
+        "SKC" -> return [SkyClear]
+        _ -> unexpected "cloud key"
+
+heightParser :: Parser (Maybe Int)
+heightParser = do
+    h <- optional (natural 3)
+    case h of
+        Nothing -> do
+            _ <- string "///"
+            return Nothing
+        Just _ -> return h
+
+cloudsAmountParser :: Parser Clouds
+cloudsAmountParser = do
+    key <- choice [string "FEW", string "SCT", string "BKN", string "OVC"]
+    vv <- heightParser
+    ctk <- optional (choice [string "CB", string "TBU"])
+    ct <-
+        case ctk of
+            Just "CB" -> return (Just Cumulonimbus)
+            Just "TCU" -> return (Just ToweringCumulus)
+            _ -> return Nothing
+    ca <- mkCloudAmount vv ct
+    r <-
+        case key of
+            "FEW" -> return (Few ca)
+            "SCT" -> return (Scattered ca)
+            "BKN" -> return (Broken ca)
+            "OVC" -> return (Overcast ca)
+    _ <- space
+    return r
+
+verticalVisibilityParser :: Parser [Clouds]
+verticalVisibilityParser = do
+    _ <- string "VV"
+    vv <- heightParser
+    os <- mkObscuredSky vv
+    _ <- space
+    return [os]
+
+-- | parser of a list of 'Clouds'
+-- The following keywords are defined by the WMO
+-- - NSC -> NoCloudBelow1500
+-- - NCD -> SkyClear
+-- The following keywords are defined by the FAA
+-- - CLR -> NoCloudBelow3600 (12000 ft)
+-- The following keywords seems to be also used
+-- - SKC -> SkyClear
+--
+-- heights is to coded in hundreds of feet on 3 digits
+--
+cloudsParser :: Parser [Clouds]
+cloudsParser = choice [noCloudParser, some cloudsAmountParser, verticalVisibilityParser]
+
 -- | CAVOK or visibility, weather and clouds parser.
 -- returns nothing if CAVOK
 vwcParser :: Parser (Maybe (Maybe Visibility, [Weather], [Clouds]))
@@ -846,4 +939,5 @@ vwcParser = do
         else do
             vs <- visibilityParser
             we <- weathersParser
-            return (Just (Just vs, we, []))
+            cs <- cloudsParser
+            return (Just (Just vs, we, cs))

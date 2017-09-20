@@ -2,8 +2,9 @@
 -- Provides data types and functions pertaining to locations
 -- in accordance with the ICAO 4444 edition 2016 standard.
 module Data.Icao.Location
+    (
     -- * Data
-    ( Aerodrome
+     Aerodrome
     , Bearing
     , Distance
     , Latitude

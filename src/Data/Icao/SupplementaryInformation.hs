@@ -3,8 +3,9 @@
 -- This field is a collection of switches all optional, use the withXXXX functions to
 -- build a new instance starting from 'emptySupplementaryInformation'.
 module Data.Icao.SupplementaryInformation
+    (
     -- * Data
-    ( PersonsOnBoard
+      PersonsOnBoard
     , Transmitter(..)
     , SurvivalEquipment(..)
     , LifeJacket(..)

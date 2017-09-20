@@ -19,8 +19,8 @@ addons:
     packages:
     - libgmp-dev
 
-before_install:
 # Download and unpack the stack executable
+before_install:
   - mkdir -p ~/.local/bin
   - export PATH=$HOME/.local/bin:$PATH
   - travis_retry curl -L https://www.stackage.org/stack/linux-x86_64 | tar xz --wildcards --strip-components=1 -C ~/.local/bin '*/stack'
@@ -28,12 +28,28 @@ before_install:
 install:
   - stack setup --no-terminal
 
-# This line does all of the work: installs GHC if necessary, cleans the previous build,
+# installs GHC if necessary, cleans the previous build,
 # build the library, executables, and test suites, and runs the test suites with coverage.
 # --no-terminal works around some quirks in Travis's terminal implementation.
 script:
   - stack --no-terminal clean
   - stack --no-terminal test --coverage --haddock --no-haddock-deps
+
+# copy haddock to docs
+before-deploy:
+  - cp -rp `stack path --local-doc-root`/Aeromess* docs
+
+# publish docs to gh-page
+deploy:
+  provider: pages
+  local_dir: docs
+  skip_cleanup: true
+  github_token: $GITHUB_TOKEN
+  on:
+    branch: master
+
+after-deploy:
+  - rm -rf docs
 
 # report coverage to coveralls.
 after_script:

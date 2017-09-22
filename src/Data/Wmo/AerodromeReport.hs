@@ -65,6 +65,8 @@ module Data.Wmo.AerodromeReport
     , withCloudAmount
     , withObscuredSky
     , withNoCloudObserved
+    , withTemperature
+    , withPressure
     -- * Parsers
     , Parser
     , Error(message, column)
@@ -303,9 +305,9 @@ data AerodromeReport = AerodromeReport
     , reportVisibility :: Maybe Visibility -- ^ visibility related observations.
     , reportWeather :: [Weather] -- ^ weather related observations.
     , reportClouds :: Maybe Clouds -- ^ clouds related observations.
-    , reportTemperature :: Maybe Int -- ^ temperature rounded to nearest whole degree Celsius.
-    , reportDewPoint :: Maybe Int -- ^ dew point rounded to nearest whole degree Celsius.
-    , reportPressure :: Maybe Pressure -- ^ mean sea level pressure (“QNH”).
+    , reportTemperature :: Int -- ^ temperature rounded to nearest whole degree Celsius.
+    , reportDewPoint :: Int -- ^ dew point rounded to nearest whole degree Celsius.
+    , reportPressure :: Pressure -- ^ mean sea level pressure (“QNH”).
     , reportRemarks :: Maybe FreeText -- ^ Report components and miscellaneous abbreviations.
     } deriving (Eq, Show)
 
@@ -373,9 +375,7 @@ cavok m = isNothing (reportVisibility m) && null (reportWeather m) && isNothing 
 -- setter.
 --
 -- If no @setters@ are provided, the METAR will contain no Wind (Calm conditions),
--- report 'cavok' conditions, ISA temperature (15 degrees Celsisus) and pressure (TODO value)
--- TODO default dew point???
--- TODO update defaultReport
+-- report 'cavok' conditions ISA temperature (15 degrees Celsius) and pressure (1013 hPa)
 --
 -- See 'with' and @withXXXX@ functions.
 --
@@ -539,6 +539,23 @@ withNoCloudObserved
     => NoCloudObserved -> AerodromeReport -> m AerodromeReport
 withNoCloudObserved nco report = return (reportWithSkyCondition (NoneObserved nco) report)
 
+-- | Modifies the given @report@ by setting the temperature and dew point.
+withTemperature
+    :: (MonadFail m)
+    => Int -> Int -> AerodromeReport -> m AerodromeReport
+withTemperature t d report = do
+    _t <- mkTemperature t
+    _d <- mkTemperature d
+    return report {reportTemperature = _t, reportDewPoint = _d}
+
+-- | Modifies the given @report@ by setting the pressure.
+withPressure
+    :: (MonadFail m)
+    => Int -> AerodromeReport -> m AerodromeReport
+withPressure p report = do
+    _p <- mkPressure p Hpa
+    return report {reportPressure = _p}
+
 -- | 'AerodromeReport' parser.
 -- This parser supports both the WMO code definition and the variation defined by the FAA.
 parser :: Parser AerodromeReport
@@ -563,10 +580,15 @@ parser = do
     _ <- space
     -- cavok or visibility, weather and clouds
     vwc <- vwcParser
+    t <- temperatureParser
+    _ <- slash
+    d <- temperatureParser
+    _ <- space
+    p <- pressureParser
     let (vs, we, cl) = fromMaybe (Nothing, [], Nothing) vwc
     let m = ReportModifiers (cor1 || cor2) au ms
     -- TODO, once everything is parsed, check for '=' or end of line.
-    return (AerodromeReport rt m st dt wd vs we cl Nothing Nothing Nothing Nothing)
+    return (AerodromeReport rt m st dt wd vs we cl t d p Nothing)
 
 -- | Parses the given textual representation of a 'AerodromeReport' using 'Parser'.
 -- return either an 'Error' ('Left') or the parsed 'AerodromeReport' ('Right').
@@ -646,9 +668,26 @@ mkObscuredSky (Just ft)
     | ft < 0 || ft > 999 = fail ("invalid vertical visibility [hundreds feet]=" ++ show ft)
     | otherwise = return (ObscuredSky (VerticalVisibility (Just ft)))
 
+mkTemperature :: (MonadFail m) => Int -> m Int
+mkTemperature t
+    | t < -99 || t > 99 = fail ("invalid temperature [celsius]=" ++ show t)
+    | otherwise = return t
+
+mkPressure:: (MonadFail m) => Int -> PressureUnit -> m Pressure
+mkPressure p u
+    | p < 0 || p > 9999 = fail ("invalid pressure [" ++ show u ++ "]=" ++ show p)
+    | otherwise = return (Pressure u p)
+
 -- ------------------------
 -- Private builder helpers.
 -- -------------------------
+
+isaTemperature :: Int
+isaTemperature = 15
+
+isaPression :: Pressure
+isaPression = Pressure Hpa 1013
+
 -- | default 'AerodromeReport' of given type for given station and time
 -- No wind, and CAVOK conditions.
 -- TODO: ISA conditions (pressure and temperature)
@@ -668,9 +707,9 @@ defaultReport t st (d, h, m) = do
              Nothing
              []
              Nothing
-             Nothing
-             Nothing
-             Nothing
+             isaTemperature
+             isaTemperature
+             isaPression
              Nothing)
 
 windWithDirection :: Int -> Maybe Wind -> Maybe Wind
@@ -1000,3 +1039,21 @@ vwcParser = do
             we <- weathersParser
             cs <- cloudsParser
             return (Just (Just vs, we, cs))
+
+temperatureParser :: Parser Int
+temperatureParser = do
+    neg <- optional (char 'M')
+    t <- natural 2
+    if isJust neg then
+        mkTemperature (negate t)
+    else
+        mkTemperature t
+
+pressureParser :: Parser Pressure
+pressureParser = do
+    u <- char 'A' <|> char 'Q'
+    p <- natural 4
+    case u of
+        'A' -> mkPressure p InchesHg
+        'Q' -> mkPressure p Hpa
+        _   -> unexpected "pression"

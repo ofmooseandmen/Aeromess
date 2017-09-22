@@ -33,6 +33,24 @@ spec =
         it "rejects the creation of a METAR with a negative prevailing visibility" $
             metar "ESMS" (29, 0, 0) [withPrevailingVisibility (-1)] `shouldBe`
             Left "invalid visibility distance [metre]=-1"
-        it "rejects the creation of a METAR with an invalid runway designator" $
+        it "rejects the creation of a METAR with an invalid runway designator (less than 2 characters)" $
+            metar "ESMS" (29, 0, 0) [withRunwayVisualRange "1" 40 Nothing Nothing] `shouldBe`
+            Left "invalid runway designator=1"
+        it "rejects the creation of a METAR with an invalid runway designator (???)" $
             metar "ESMS" (29, 0, 0) [withRunwayVisualRange "???" 40 Nothing Nothing] `shouldBe`
             Left "invalid runway designator=???"
+        it "rejects the creation of a METAR with an invalid runway designator (13X)" $
+            metar "ESMS" (29, 0, 0) [withRunwayVisualRange "13X" 40 Nothing Nothing] `shouldBe`
+            Left "invalid runway designator=13X"
+        it "rejects the creation of a METAR with a negative vertical visibility" $
+            metar "ESMS" (29, 0, 0) [withObscuredSky (Just (-1))] `shouldBe`
+            Left "invalid vertical visibility [hundreds feet]=-1"
+        it "rejects the creation of a METAR with an invalid vertical visibility" $
+            metar "ESMS" (29, 0, 0) [withObscuredSky (Just 1000)] `shouldBe`
+            Left "invalid vertical visibility [hundreds feet]=1000"
+        it "rejects the creation of a METAR with a negative cloud amount height" $
+            metar "ESMS" (29, 0, 0) [withCloudAmount Few (Just (-1)) Nothing] `shouldBe`
+            Left "invalid cloud amount height [hundreds feet]=1000"
+        it "rejects the creation of a METAR with an invalid cloud amount height" $
+            metar "ESMS" (29, 0, 0) [withCloudAmount Few (Just 1000) Nothing] `shouldBe`
+            Left "invalid cloud amount height [hundreds feet]=1000"

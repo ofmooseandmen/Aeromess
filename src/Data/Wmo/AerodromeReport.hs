@@ -99,8 +99,8 @@ data SpeedUnit
 -- | Distance unit.
 -- Note: unit abbreviation is not used to avoid conflicts.
 -- TODO: move to Icao?
-data LengthUnit
-    = Metre -- ^ metre, standard unit.
+data LengthUnit =
+    Metre -- ^ metre, standard unit.
     | Foot -- ^ foot, used by FAA for RVR.
     | Mile -- ^ mile, more formally statute mile, used by FAA.
     deriving (Eq, Show)
@@ -135,11 +135,13 @@ data VisibilityTendency
     deriving (Eq, Show)
 
 -- | Visibility distance in appropriate unit.
-data VisibilityDistance = VisibilityDistance
+data VisibilityDistance
+    = VisibilityDistance
     { vdUnit :: LengthUnit -- ^ distance unit
     , vdValue :: Int -- ^ distance value in the unit.
     , vdFraction :: Maybe (Int, Int) -- ^ distance fraction in the unit, e.g. (1, 4) for a 1/4.
-    } deriving (Eq, Show)
+    }
+    deriving (Eq, Show)
 
 -- | Runway designator: 2 digits possibly appended with L(eft) C(entral) or R(ight) for parallel runways.
 newtype RunwayDesignator =
@@ -517,10 +519,14 @@ withWeather q d p report = return v
   where
     v = reportWithWeather (Weather q d p) report
 
--- | Modifies the given @report@ by adding a cloud amount observation.
+-- | Modifies the given @report@ by adding the cloud amount observation.
 withCloudAmount
     :: (MonadFail m)
-    => CloudAmountType -> Maybe Int -> Maybe CloudType -> AerodromeReport -> m AerodromeReport
+    => CloudAmountType
+    -> Maybe Int
+    -> Maybe CloudType
+    -> AerodromeReport
+    -> m AerodromeReport
 withCloudAmount cat h ct report = do
     ca <- mkCloudAmount cat h ct
     return (reportWithCloudAmount ca report)
@@ -659,19 +665,7 @@ defaultReport t st (d, h, m) = do
     _st <- mkAerodrome st
     _dt <- mkDayTime d h m
     return
-        (AerodromeReport
-             t
-             noModifiers
-             _st
-             _dt
-             Nothing
-             Nothing
-             []
-             Nothing
-             Nothing
-             Nothing
-             Nothing
-             Nothing)
+        (AerodromeReport t noModifiers _st _dt Nothing Nothing [] Nothing Nothing Nothing Nothing Nothing)
 
 windWithDirection :: Int -> Maybe Wind -> Maybe Wind
 windWithDirection dir Nothing = Just (Wind (Just dir) (WindSpeed KT 0) Nothing Nothing)
@@ -693,13 +687,11 @@ visiblityWithLowest :: VisibilityDistance
                     -> Maybe CompassPoint
                     -> Maybe Visibility
                     -> Maybe Visibility
-visiblityWithLowest dst cp Nothing =
-    Just (Visibility (VisibilityDistance Metre 0 Nothing) (Just dst) cp [])
+visiblityWithLowest dst cp Nothing = Just (Visibility (VisibilityDistance Metre 0 Nothing) (Just dst) cp [])
 visiblityWithLowest dst cp (Just v) = Just (v {vLowest = Just dst, vLowestDirection = cp})
 
 visiblityWithRvr :: RunwayVisualRange -> Maybe Visibility -> Maybe Visibility
-visiblityWithRvr rvr Nothing =
-    Just (Visibility (VisibilityDistance Metre 0 Nothing) Nothing Nothing [rvr])
+visiblityWithRvr rvr Nothing = Just (Visibility (VisibilityDistance Metre 0 Nothing) Nothing Nothing [rvr])
 visiblityWithRvr rvr (Just v) = Just (v {vRunways = rvr : vRunways v})
 
 reportWithWeather :: Weather -> AerodromeReport -> AerodromeReport
@@ -819,8 +811,7 @@ wmoVisibilityParser = do
         case l of
             Nothing -> return Nothing
             Just _ -> fmap Just (compassPointParser <* space)
-    return
-        (VisibilityDistance Metre v Nothing, fmap (\lv -> VisibilityDistance Metre lv Nothing) l, d)
+    return (VisibilityDistance Metre v Nothing, fmap (\lv -> VisibilityDistance Metre lv Nothing) l, d)
 
 -- | 'x/ySM' parser.
 mileFractionParser :: Parser (Int, Int)
@@ -985,8 +976,10 @@ verticalVisibilityParser = do
 -- heights is coded in hundreds of feet on 3 digits
 --
 cloudsParser :: Parser (Maybe Clouds)
-cloudsParser =
-    choice [clearishSkyParser, cloudAmountsParser, verticalVisibilityParser, return Nothing]
+cloudsParser = choice [clearishSkyParser
+                     , cloudAmountsParser
+                     , verticalVisibilityParser
+                     , return Nothing]
 
 -- | CAVOK or visibility, weather and clouds parser.
 -- returns nothing if CAVOK

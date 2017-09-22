@@ -1,0 +1,16 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><link rel="stylesheet" type="text/css" href="style.css" /><script type="text/javascript" src="highlight.js"></script></head><body><pre><span class="hs-comment">-- |</span><span>
+</span><a name="line-2"></a><span class="hs-comment">-- ICAO Field Type 3 - Message type, number and reference data.</span><span>
+</span><a name="line-3"></a><span class="hs-comment">-- TODO: support number and reference data</span><span>
+</span><a name="line-4"></a><span class="hs-keyword">module</span><span> </span><span class="hs-identifier">Data</span><span class="hs-operator">.</span><span class="hs-identifier">Icao</span><span class="hs-operator">.</span><span class="hs-identifier">F3</span><span>
+</span><a name="line-5"></a><span>    </span><span class="hs-special">(</span><span> </span><a href="Data.Icao.F3.html#parser"><span class="hs-identifier hs-var">parser</span></a><span>
+</span><a name="line-6"></a><span>    </span><span class="hs-special">)</span><span> </span><span class="hs-keyword">where</span><span>
+</span><a name="line-7"></a><span>
+</span><a name="line-8"></a><span class="hs-keyword">import</span><span> </span><a href="Data.Aeromess.Parser.html"><span class="hs-identifier">Data</span><span class="hs-operator">.</span><span class="hs-identifier">Aeromess</span><span class="hs-operator">.</span><span class="hs-identifier">Parser</span></a><span>
+</span><a name="line-9"></a><span>
+</span><a name="line-10"></a><span class="hs-comment">-- | Field Type 3 parser.</span><span>
+</span><a name="line-11"></a><span class="hs-identifier">parser</span><span> </span><span class="hs-glyph">::</span><span> </span><a href="Data.Aeromess.Parser.html#Parser"><span class="hs-identifier hs-type">Parser</span></a><span> </span><span class="hs-identifier hs-type">String</span><span>
+</span><a name="line-12"></a><a name="parser"><a href="Data.Icao.F3.html#parser"><span class="hs-identifier">parser</span></a></a><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-keyword">do</span><span>
+</span><a name="line-13"></a><span>    </span><a name="local-1627426203"><a href="#local-1627426203"><span class="hs-identifier">t</span></a></a><span> </span><span class="hs-glyph">&lt;-</span><span> </span><a href="Data.Aeromess.Parser.html#word"><span class="hs-identifier hs-var">word</span></a><span>
+</span><a name="line-14"></a><span>    </span><span class="hs-identifier">_</span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><a href="Data.Aeromess.Parser.html#dash"><span class="hs-identifier hs-var">dash</span></a><span>
+</span><a name="line-15"></a><span>    </span><span class="hs-identifier hs-var">return</span><span> </span><a href="#local-1627426203"><span class="hs-identifier hs-var">t</span></a><span>
+</span><a name="line-16"></a></pre></body></html>

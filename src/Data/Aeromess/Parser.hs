@@ -60,10 +60,10 @@ instance IsString Error where
     fromString s = Error s 0
 
 -- | Parser.
-type Parser a = P.ParsecT String () Identity a
+type Parser = P.ParsecT String () Identity
 
 -- | 'MonadFail' instance for 'Parser': @fail@ calls 'unexpected'.
-instance MonadFail (P.ParsecT String () Identity) where
+instance MonadFail Parser where
     fail = unexpected
 
 -- | 'MonadFail' instance for 'Either'.

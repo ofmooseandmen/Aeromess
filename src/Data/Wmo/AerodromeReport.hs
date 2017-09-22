@@ -38,8 +38,9 @@ module Data.Wmo.AerodromeReport
     , Weather(wQualifier, wDescriptor, wPhenomenon)
     , CloudType(..)
     , CloudAmountType(..)
-    , CloudAmount(caHeight, caType)
+    , CloudAmount(caHeight, caType, clType)
     , VerticalVisibility(vvExtent)
+    , NoCloudObserved(..)
     , Clouds(..)
     , Pressure(pUnit, pValue)
     , ReportModifiers(reportCorrected, reportAuto, reportMissed)
@@ -62,6 +63,8 @@ module Data.Wmo.AerodromeReport
     , withFaaRunwayVisualRange
     , withWeather
     , withCloudAmount
+    , withObscuredSky
+    , withNoCloudObserved
     -- * Parsers
     , Parser
     , Error(message, column)
@@ -259,12 +262,18 @@ newtype VerticalVisibility = VerticalVisibility
     { vvExtent :: Maybe Int -- ^ extent of vertical visibility in hundreds of feet above field elevation.
     } deriving (Eq, Show)
 
+-- | Sky conditions when cloud were not observed.
+data NoCloudObserved
+    = NoCloudBelow1500
+    | NoCloudBelow3600
+    | SkyClear
+    deriving (Eq, Show)
+
+-- | Clouds observation.
 data Clouds
     = CloudAmounts [CloudAmount]
     | ObscuredSky VerticalVisibility
-    | NoCloudBelow1500
-    | NoCloudBelow3600
-    | SkyClear
+    | NoneObserved NoCloudObserved
     deriving (Eq, Show)
 
 -- | Mean sea level pressure unit.
@@ -479,7 +488,7 @@ withRunwayVisualRange rwy dst ext tdc report = do
               visiblityWithRvr (RunwayVisualRange _rwy _dst ext tdc) (reportVisibility report)
         }
 
--- | Modifies the given @report@ by adding the runway visual range (RVR) according to the FAA standard.
+-- | Modifies the given @report@ by adding a runway visual range (RVR) according to the FAA standard.
 -- the runway visibility is expressed in feet.
 withFaaRunwayVisualRange
     :: (MonadFail m)
@@ -498,7 +507,7 @@ withFaaRunwayVisualRange rwy dst ext tdc report = do
               visiblityWithRvr (RunwayVisualRange _rwy _dst ext tdc) (reportVisibility report)
         }
 
--- | Modifies the given @report@ by adding the weather observation.
+-- | Modifies the given @report@ by adding a weather observation.
 withWeather
     :: (MonadFail m)
     => Maybe WeatherQualifier
@@ -510,7 +519,7 @@ withWeather q d p report = return v
   where
     v = reportWithWeather (Weather q d p) report
 
--- | Modifies the given @report@ by adding the cloud amount observation.
+-- | Modifies the given @report@ by adding a cloud amount observation.
 withCloudAmount
     :: (MonadFail m)
     => CloudAmountType
@@ -521,6 +530,17 @@ withCloudAmount
 withCloudAmount cat h ct report = do
     ca <- mkCloudAmount cat h ct
     return (reportWithCloudAmount ca report)
+
+-- | Modifies the given @report@ by setting the obscured sky observation.
+withObscuredSky :: (MonadFail m) => Maybe Int ->  AerodromeReport -> m AerodromeReport
+withObscuredSky h report = do
+    os <- mkObscuredSky h
+    return (reportWithSkyCondition os report)
+
+-- | Modifies the given @report@ by setting the reason why no clouds were observed.
+withNoCloudObserved :: (MonadFail m) => NoCloudObserved ->  AerodromeReport -> m AerodromeReport
+withNoCloudObserved nco report =
+    return (reportWithSkyCondition (NoneObserved nco) report)
 
 -- | 'AerodromeReport' parser.
 -- This parser supports both the WMO code definition and the variation defined by the FAA.
@@ -679,6 +699,9 @@ reportWithCloudAmount ca r =
     case reportClouds r of
         (Just (CloudAmounts cur)) -> r { reportClouds = Just (CloudAmounts (ca : cur)) }
         _                         -> r { reportClouds = Just (CloudAmounts [ca]) }
+
+reportWithSkyCondition :: Clouds  -> AerodromeReport -> AerodromeReport
+reportWithSkyCondition sc r = r { reportClouds = Just sc }
 
 -- ----------------
 -- Private parsers.
@@ -886,13 +909,13 @@ weathersParser = many (try weatherParser)
 
 clearishSkyParser :: Parser (Maybe Clouds)
 clearishSkyParser = do
-    key <- choice [string "NSC", string "NCD", string "CLR", string "SKC"]
+    key <- choice [try (string "NSC"), string "NCD", string "CLR", string "SKC"]
     _ <- space
     case key of
-        "NSC" -> return (Just NoCloudBelow1500)
-        "NCD" -> return (Just SkyClear)
-        "CLR" -> return (Just NoCloudBelow3600)
-        "SKC" -> return (Just SkyClear)
+        "NSC" -> return (Just (NoneObserved NoCloudBelow1500))
+        "NCD" -> return (Just (NoneObserved SkyClear))
+        "CLR" -> return (Just (NoneObserved NoCloudBelow3600))
+        "SKC" -> return (Just (NoneObserved SkyClear))
         _ -> unexpected "cloud key"
 
 heightParser :: Parser (Maybe Int)

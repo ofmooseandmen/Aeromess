@@ -122,7 +122,7 @@ spec =
                 , withWeather (Just InVicinityWeather) Nothing [Snow]
                 ]
         it "parses a SPECI with heavy rain and few/overcast cloud amounts" $
-            parse "SPECI ESMS 131250Z 18016KT 9999 +RA FEW022CB OVC050 12/12 Q0988" `shouldBe`
+            parse "SPECI ESMS 131250Z 18016KT 9999 +RA FEW022CB OVC/// 12/12 Q0988" `shouldBe`
             speci
                 "ESMS"
                 (13, 12, 50)
@@ -131,5 +131,65 @@ spec =
                 , withPrevailingVisibility 9999
                 , withWeather (Just HeavyWeather) Nothing [Rain]
                 , withCloudAmount Few (Just 22) (Just Cumulonimbus)
-                , withCloudAmount Overcast (Just 50) Nothing
+                , withCloudAmount Overcast Nothing Nothing
+                ]
+        it "parses a METAR with obscured sky and vertical visibility" $
+            parse "METAR ESMS 131250Z 18016KT 9999 VV015 12/12 Q0988" `shouldBe`
+            metar
+                "ESMS"
+                (13, 12, 50)
+                [ withWindDirection 180
+                , withWindSpeed 16 Nothing KT
+                , withPrevailingVisibility 9999
+                , withObscuredSky (Just 15)
+                ]
+        it "parses a SPECI with obscured sky and unknown vertical visibility" $
+            parse "SPECI ESMS 131250Z 18016KT 9999 VV/// 12/12 Q0988" `shouldBe`
+            speci
+                "ESMS"
+                (13, 12, 50)
+                [ withWindDirection 180
+                , withWindSpeed 16 Nothing KT
+                , withPrevailingVisibility 9999
+                , withObscuredSky Nothing
+                ]
+        it "parses a METAR with clear sky (NCD)" $
+            parse "METAR ESMS 131250Z 18016KT 9999 NCD 12/12 Q0988" `shouldBe`
+            metar
+                "ESMS"
+                (13, 12, 50)
+                [ withWindDirection 180
+                , withWindSpeed 16 Nothing KT
+                , withPrevailingVisibility 9999
+                , withNoCloudObserved SkyClear
+                ]
+        it "parses a METAR with clear sky (SKC)" $
+            parse "METAR ESMS 131250Z 18016KT 9999 SKC 12/12 Q0988" `shouldBe`
+            metar
+                "ESMS"
+                (13, 12, 50)
+                [ withWindDirection 180
+                , withWindSpeed 16 Nothing KT
+                , withPrevailingVisibility 9999
+                , withNoCloudObserved SkyClear
+                ]
+        it "parses a METAR with no observed cloud below 1500 ft" $
+            parse "METAR ESMS 131250Z 18016KT 9999 NSC 12/12 Q0988" `shouldBe`
+            metar
+                "ESMS"
+                (13, 12, 50)
+                [ withWindDirection 180
+                , withWindSpeed 16 Nothing KT
+                , withPrevailingVisibility 9999
+                , withNoCloudObserved NoCloudBelow1500
+                ]
+        it "parses a METAR with no observed cloud below 3600 ft" $
+            parse "METAR ESMS 131250Z 18016KT 9999 CLR 12/12 Q0988" `shouldBe`
+            metar
+                "ESMS"
+                (13, 12, 50)
+                [ withWindDirection 180
+                , withWindSpeed 16 Nothing KT
+                , withPrevailingVisibility 9999
+                , withNoCloudObserved NoCloudBelow3600
                 ]

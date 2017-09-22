@@ -19,6 +19,8 @@ spec =
                 [ withWindDirection 250
                 , withWindSpeed 4 Nothing KT
                 , withFaaPrevailingVisibility (Just 10) Nothing
+                , withTemperature 22 18
+                , withFaaPressure 3003
                 ]
         it "parses a METAR with prevailing visibility expressed in mile and fraction" $
             parse
@@ -29,6 +31,8 @@ spec =
                 [ withWindDirection 250
                 , withWindSpeed 4 Nothing KT
                 , withFaaPrevailingVisibility (Just 10) (Just (1, 4))
+                , withTemperature 22 18
+                , withFaaPressure 3003
                 ]
         it "parses a METAR with prevailing visibility expressed in fraction only" $
             parse
@@ -39,9 +43,11 @@ spec =
                 [ withWindDirection 250
                 , withWindSpeed 4 Nothing KT
                 , withFaaPrevailingVisibility Nothing (Just (1, 4))
+                , withTemperature 22 18
+                , withFaaPressure 3003
                 ]
         it "parses a METAR with Runway Visual Range (RVR)" $
-            parse "METAR KJFK 191921Z 06010KT 3/8SM R11L/P6000FT A3003" `shouldBe`
+            parse "METAR KJFK 191921Z 06010KT 3/8SM R11L/P6000FT 22/18 A3003" `shouldBe`
             metar
                 "KJFK"
                 (19, 19, 21)
@@ -49,4 +55,6 @@ spec =
                 , withWindSpeed 10 Nothing KT
                 , withFaaPrevailingVisibility Nothing (Just (3, 8))
                 , withFaaRunwayVisualRange "11L" 6000 (Just Higher) Nothing
+                , withTemperature 22 18
+                , withFaaPressure 3003
                 ]

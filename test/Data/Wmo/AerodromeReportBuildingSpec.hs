@@ -50,7 +50,19 @@ spec =
             Left "invalid vertical visibility [hundreds feet]=1000"
         it "rejects the creation of a METAR with a negative cloud amount height" $
             metar "ESMS" (29, 0, 0) [withCloudAmount Few (Just (-1)) Nothing] `shouldBe`
-            Left "invalid cloud amount height [hundreds feet]=1000"
+            Left "invalid cloud amount height [hundreds feet]=-1"
         it "rejects the creation of a METAR with an invalid cloud amount height" $
             metar "ESMS" (29, 0, 0) [withCloudAmount Few (Just 1000) Nothing] `shouldBe`
             Left "invalid cloud amount height [hundreds feet]=1000"
+        it "rejects the creation of a METAR with an invalid temperature" $
+            metar "ESMS" (29, 0, 0) [withTemperature 100 10] `shouldBe`
+            Left "invalid temperature [celsius]=100"
+        it "rejects the creation of a METAR with an dew point" $
+            metar "ESMS" (29, 0, 0) [withTemperature 10 100] `shouldBe`
+            Left "invalid temperature [celsius]=100"
+        it "rejects the creation of a METAR with a negative pressure" $
+            metar "ESMS" (29, 0, 0) [withPressure (-1)] `shouldBe`
+            Left "invalid pressure [Hpa]=-1"
+        it "rejects the creation of a METAR with an invalid pressure" $
+            metar "ESMS" (29, 0, 0) [withPressure 10000] `shouldBe`
+            Left "invalid pressure [Hpa]=10000"

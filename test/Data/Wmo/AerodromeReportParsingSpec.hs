@@ -47,7 +47,13 @@ spec =
                 , withPressure 988]
         it "parses a METAR with variable wind" $
             parse "METAR ESMS 131250Z VRB16KT 9999 12/12 Q0988" `shouldBe`
-            metar "ESMS" (13, 12, 50) [withWindSpeed 16 Nothing KT, withPrevailingVisibility 9999]
+            metar
+                "ESMS"
+                (13, 12, 50)
+                [ withWindSpeed 16 Nothing KT
+                , withPrevailingVisibility 9999
+                , withTemperature 12 12
+                , withPressure 988]
         it "parses a corrected METAR" $
             parse "METAR COR LFPG 152330Z 25003KT CAVOK M09/M01 Q1012 NOSIG" `shouldBe`
             metar
@@ -66,6 +72,8 @@ spec =
                 [ withModifiers (True, False, False)
                 , withWindDirection 250
                 , withWindSpeed 3 Nothing KT
+                , withTemperature 10 9
+                , withPressure 1012
                 ]
         it "parses an automatic METAR" $
             parse "METAR LFPG 152330Z AUTO 25003KT CAVOK 10/09 Q1012 NOSIG" `shouldBe`

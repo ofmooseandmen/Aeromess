@@ -67,6 +67,7 @@ module Data.Wmo.AerodromeReport
     , withNoCloudObserved
     , withTemperature
     , withPressure
+    , withFaaPressure
     -- * Parsers
     , Parser
     , Error(message, column)
@@ -548,12 +549,20 @@ withTemperature t d report = do
     _d <- mkTemperature d
     return report {reportTemperature = _t, reportDewPoint = _d}
 
--- | Modifies the given @report@ by setting the pressure.
+-- | Modifies the given @report@ by setting the pressure in Hectopascals.
 withPressure
     :: (MonadFail m)
     => Int -> AerodromeReport -> m AerodromeReport
 withPressure p report = do
     _p <- mkPressure p Hpa
+    return report {reportPressure = _p}
+
+-- | Modifies the given @report@ by setting the pressure in inches of mercury.
+withFaaPressure
+    :: (MonadFail m)
+    => Int -> AerodromeReport -> m AerodromeReport
+withFaaPressure p report = do
+    _p <- mkPressure p InchesHg
     return report {reportPressure = _p}
 
 -- | 'AerodromeReport' parser.
@@ -769,7 +778,7 @@ variableDirectionParser = do
     r <- wdParser
     return (WindVariableDirection l r)
 
--- | if VRB -> Nothing, else 'wdParser'.
+-- | if VRB -> Nothing, else @wdParser@.
 windDirectionParser :: Parser (Maybe Int)
 windDirectionParser = do
     var <- fmap isJust (optional (string "VRB"))
@@ -1031,7 +1040,7 @@ cloudsParser =
 -- returns nothing if CAVOK
 vwcParser :: Parser (Maybe (Maybe Visibility, [Weather], Maybe Clouds))
 vwcParser = do
-    ok <- fmap isJust (optional (string "CAVOK"))
+    ok <- fmap isJust (optional (string "CAVOK "))
     if ok
         then return Nothing
         else do
